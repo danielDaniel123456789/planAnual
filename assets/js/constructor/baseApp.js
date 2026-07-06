@@ -72,38 +72,152 @@ class BaseApp {
         await this.renderContent();
     }
 
-async renderContent() {
-    const container = document.getElementById('mainContent');
-    if (!this.currentSectionId) {
-        container.innerHTML = this.getEmptySectionHTML();
-        return;
+    async renderContent() {
+        const container = document.getElementById('mainContent');
+        if (!this.currentSectionId) {
+            container.innerHTML = this.getEmptySectionHTML();
+            return;
+        }
+        if (!this.currentCategory) {
+            container.innerHTML = this.getDefaultViewHTML();
+            return;
+        }
+        if (this.currentCategory === 'estudiantes') { 
+            await this.studentManager.renderStudents(container); 
+            return;
+        }
+        if (this.currentCategory === 'notas_finales') { 
+            await this.finalGradesManager.renderFinalGrades(container); 
+            return;
+        }
+        if (this.currentCategory === 'plan') { 
+            await this.planManager.renderPlan(container); 
+            return;
+        }
+        if (this.currentCategory === 'machote') {
+            await this.machoteManager.renderMachotes(container);
+            return;
+        }
+        if (this.currentCategory === 'rubro') {
+            // USAR EL MÉTODO DIRECTO DE LA APP
+            if (typeof this.renderRubros === 'function') {
+                await this.renderRubros(container);
+            } else {
+                // FALLBACK: renderizar rubros directamente
+                await this.renderRubrosFallback(container);
+            }
+            return;
+        }
+        await this.workItemsView.render(container, this.currentCategory);
     }
-    if (!this.currentCategory) {
-        container.innerHTML = this.getDefaultViewHTML();
-        return;
+
+    // ============================================================
+    // MÉTODO FALLBACK PARA RUBROS (si no está definido en la app)
+    // ============================================================
+    async renderRubrosFallback(container) {
+        console.log('📊 Usando renderRubrosFallback');
+        const rubros = this.grades.works['rubro'] || [];
+        
+        let html = `
+            <div class="works-header">
+                <h2><i class="fas fa-percent" style="color:#f9e2af;"></i> Rubros <span class="count">(${rubros.length})</span></h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn-action btn-primary" onclick="window.app?.addRubro()">
+                        <i class="fas fa-plus"></i> Agregar Rubro
+                    </button>
+                    <button class="btn-action btn-info" onclick="window.app?.importarRubros()">
+                        <i class="fas fa-file-import"></i> Importar
+                    </button>
+                </div>
+            </div>`;
+
+        if (rubros.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <i class="fas fa-percent" style="font-size:48px; color:#f9e2af; opacity:0.3;"></i>
+                    <p>No hay rubros creados</p>
+                    <p style="font-size:13px; color:var(--text-muted);">Los rubros definen los porcentajes de evaluación</p>
+                    <button class="btn-action btn-primary" onclick="window.app?.addRubro()">
+                        <i class="fas fa-plus"></i> Crear primer rubro
+                    </button>
+                </div>`;
+            container.innerHTML = html;
+            return;
+        }
+
+        let totalPorcentaje = 0;
+        for (const rubro of rubros) {
+            totalPorcentaje += (rubro.porcentaje || 0);
+        }
+
+        html += `
+            <div style="overflow-x:auto; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border-color);">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Porcentaje (%)</th>
+                            <th>Fecha</th>
+                            <th style="text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        for (let i = 0; i < rubros.length; i++) {
+            const rubro = rubros[i];
+            html += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td style="font-weight:500; color:var(--text-primary);">
+                        <i class="fas fa-percent" style="color:#f9e2af; margin-right:8px;"></i>
+                        ${escapeHtml(rubro.nombre)}
+                    </td>
+                    <td>
+                        <span style="background:rgba(249,226,175,0.15); color:#f9e2af; padding:2px 12px; border-radius:12px; font-weight:600;">
+                            ${rubro.porcentaje || 0}%
+                        </span>
+                    </td>
+                    <td style="font-size:12px; color:var(--text-muted);">
+                        ${rubro.fecha || 'Sin fecha'}
+                    </td>
+                    <td style="text-align:center;">
+                        <button class="btn-action btn-primary" onclick="window.app?.editarRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button class="btn-action btn-danger" onclick="window.app?.deleteRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        }
+
+        html += `
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top:2px solid var(--border-color); font-weight:bold;">
+                            <td colspan="2" style="text-align:right; color:var(--text-secondary);">TOTAL:</td>
+                            <td>
+                                <span style="background:rgba(249,226,175,0.25); color:${totalPorcentaje === 100 ? '#a6e3a1' : '#f38ba8'}; padding:2px 12px; border-radius:12px; font-weight:700;">
+                                    ${totalPorcentaje}%
+                                    ${totalPorcentaje === 100 ? ' ✅' : totalPorcentaje > 100 ? ' ⚠️ Excede 100%' : ' ⚠️ Faltante'}
+                                </span>
+                            </td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <div style="margin-top:12px; padding:12px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border-color);">
+                <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-muted);">
+                    <span><i class="fas fa-info-circle" style="color:#f9e2af;"></i> Los rubros definen los porcentajes de evaluación</span>
+                    <span><i class="fas fa-calculator" style="color:#f9e2af;"></i> El total debe sumar <strong>100%</strong></span>
+                </div>
+            </div>`;
+
+        container.innerHTML = html;
     }
-    if (this.currentCategory === 'estudiantes') { 
-        await this.studentManager.renderStudents(container); 
-        return;
-    }
-    if (this.currentCategory === 'notas_finales') { 
-        await this.finalGradesManager.renderFinalGrades(container); 
-        return;
-    }
-    if (this.currentCategory === 'plan') { 
-        await this.planManager.renderPlan(container); 
-        return;
-    }
-    if (this.currentCategory === 'machote') {
-        await this.machoteManager.renderMachotes(container);
-        return;
-    }
-    if (this.currentCategory === 'rubro') {  // NUEVO
-        await this.rubrosManager.renderRubros(container);
-        return;
-    }
-    await this.workItemsView.render(container, this.currentCategory);
-}
 
     getEmptySectionHTML() {
         return `
@@ -128,7 +242,7 @@ async renderContent() {
             <div class="empty-state">
                 <i class="fas fa-arrow-left"></i>
                 <p>Selecciona una categoría del menú lateral</p>
-                <span style="font-size:13px; color:var(--text-muted);">Estudiantes, Plan, Trabajos Cotidianos, Tareas, Exámenes, Proyectos, Machotes, Asistencia, Bitácora, Notas Finales</span>
+                <span style="font-size:13px; color:var(--text-muted);">Estudiantes, Plan, Trabajos Cotidianos, Tareas, Exámenes, Proyectos, Machotes, Asistencia, Bitácora, Notas Finales, Rubros</span>
             </div>`;
     }
 

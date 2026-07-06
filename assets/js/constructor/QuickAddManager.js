@@ -20,7 +20,7 @@ class QuickAddManager {
                     <option value="examen">📝 Examen</option>
                     <option value="proyecto">🚀 Proyecto</option>
                     <option value="machote">📦 Machote</option>
-                    <option value="rubro">📊 Rubro</option>  <!-- NUEVO -->
+                    <option value="rubro">📊 Rubro</option>
                     <option value="plan">📅 Plan</option>
                 </select>
                 
@@ -68,6 +68,26 @@ class QuickAddManager {
                                 </select>
                             `;
                             break;
+                        case 'rubro':  // <-- NUEVO CASO PARA RUBRO
+                            placeholder = 'Nombre del rubro (Ej. Trabajos Cotidianos)';
+                            extraFields = `
+                                <label style="font-size:13px; color:var(--text-secondary); margin-top:8px;">📊 Porcentaje (%):</label>
+                                <input id="swal-porcentaje" class="swal2-input" type="number" value="20" min="0" max="100" step="1">
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                                    <i class="fas fa-info-circle"></i> El porcentaje debe ser entre 0 y 100
+                                </div>
+                            `;
+                            break;
+                        case 'machote':
+                            placeholder = 'Nombre del machote';
+                            extraFields = `
+                                <label style="font-size:13px; color:var(--text-secondary); margin-top:8px;">📂 Categoría:</label>
+                                <input id="swal-categoria" class="swal2-input" placeholder="Ej. Proyectos, Exámenes, etc.">
+                                
+                                <label style="font-size:13px; color:var(--text-secondary);">📄 Descripción:</label>
+                                <textarea id="swal-descripcion" class="swal2-textarea" rows="2" placeholder="Breve descripción..."></textarea>
+                            `;
+                            break;
                         default:
                             placeholder = 'Nombre del trabajo';
                             extraFields = `
@@ -76,6 +96,9 @@ class QuickAddManager {
                                 
                                 <label style="font-size:13px; color:var(--text-secondary);">📅 Fecha de entrega:</label>
                                 <input id="swal-fecha" class="swal2-input" type="date">
+                                
+                                <label style="font-size:13px; color:var(--text-secondary);">📋 Rúbrica (opcional):</label>
+                                <textarea id="swal-rubrica" class="swal2-textarea" rows="2" placeholder="Criterios de evaluación..."></textarea>
                             `;
                     }
                     
@@ -106,9 +129,20 @@ class QuickAddManager {
                 } else if (tipo === 'plan') {
                     result.contenido = document.getElementById('swal-contenido')?.value || '';
                     result.periodo = document.getElementById('swal-periodo')?.value || 'semana';
+                } else if (tipo === 'rubro') {  // <-- NUEVO CASO PARA RUBRO
+                    const porcentaje = parseInt(document.getElementById('swal-porcentaje')?.value) || 20;
+                    if (porcentaje < 0 || porcentaje > 100) {
+                        Swal.showValidationMessage('El porcentaje debe ser entre 0 y 100');
+                        return;
+                    }
+                    result.porcentaje = porcentaje;
+                } else if (tipo === 'machote') {
+                    result.categoria = document.getElementById('swal-categoria')?.value || 'General';
+                    result.descripcion = document.getElementById('swal-descripcion')?.value || '';
                 } else {
                     result.puntosMax = parseInt(document.getElementById('swal-puntos')?.value) || 100;
                     result.fecha = document.getElementById('swal-fecha')?.value || '';
+                    result.rubrica = document.getElementById('swal-rubrica')?.value || '';
                 }
                 
                 return result;
@@ -143,15 +177,24 @@ class QuickAddManager {
                 case 'machote':
                     await this.app.grades.addWork(this.app.currentSectionId, 'machote', {
                         nombre: data.nombre,
-                        categoria: 'General',
-                        descripcion: '',
+                        categoria: data.categoria || 'General',
+                        descripcion: data.descripcion || '',
                         contenido: '',
                         fecha: getDayMonth(),
                         activo: true
                     });
                     this.app.ui.showSuccess(`✅ Machote "${data.nombre}" creado`);
                     break;
-                    
+
+                case 'rubro':  // <-- NUEVO CASO PARA RUBRO
+                    await this.app.grades.addWork(this.app.currentSectionId, 'rubro', {
+                        nombre: data.nombre,
+                        porcentaje: data.porcentaje || 20,
+                        fecha: getDayMonth(),
+                        activo: true
+                    });
+                    this.app.ui.showSuccess(`✅ Rubro "${data.nombre}" creado con ${data.porcentaje}%`);
+                    break;
                     
                 default:
                     const tipoLabels = {
@@ -165,6 +208,7 @@ class QuickAddManager {
                         puntosMax: data.puntosMax || 100,
                         fecha: getDayMonth(),
                         fechaEntrega: data.fecha || '',
+                        rubrica: data.rubrica || null,
                         activo: true
                     });
                     this.app.ui.showSuccess(`✅ ${tipoLabels[data.tipo] || data.tipo} "${data.nombre}" creado`);

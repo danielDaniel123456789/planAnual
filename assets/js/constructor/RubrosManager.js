@@ -1,5 +1,5 @@
 // ============================================================
-// RubrosManager.js - Gestión de Rubros (tabla con nombres y porcentajes)
+// RubrosManager.js - Gestión de Rubros
 // ============================================================
 
 class RubrosManager {
@@ -9,19 +9,21 @@ class RubrosManager {
         this.tipoLabel = 'Rubros';
         this.tipoIcono = 'fas fa-percent';
         this.tipoColor = '#f9e2af';
+        console.log('✅ RubrosManager instanciado correctamente');
     }
 
     async renderRubros(container) {
+        console.log('📊 RubrosManager.renderRubros llamado');
         const rubros = this.app.grades.works[this.tipo] || [];
         
         let html = `
             <div class="works-header">
                 <h2><i class="${this.tipoIcono}" style="color:${this.tipoColor};"></i> ${this.tipoLabel} <span class="count">(${rubros.length})</span></h2>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn-action btn-primary" onclick="window.app?.addRubro()">
+                    <button class="btn-action btn-primary" onclick="window.app.addRubro()">
                         <i class="fas fa-plus"></i> Agregar Rubro
                     </button>
-                    <button class="btn-action btn-info" onclick="window.app?.importarRubros()">
+                    <button class="btn-action btn-info" onclick="window.app.importarRubros()">
                         <i class="fas fa-file-import"></i> Importar
                     </button>
                 </div>
@@ -33,7 +35,7 @@ class RubrosManager {
                     <i class="${this.tipoIcono}" style="font-size:48px; color:${this.tipoColor}; opacity:0.3;"></i>
                     <p>No hay rubros creados</p>
                     <p style="font-size:13px; color:var(--text-muted);">Los rubros definen los porcentajes de evaluación</p>
-                    <button class="btn-action btn-primary" onclick="window.app?.addRubro()">
+                    <button class="btn-action btn-primary" onclick="window.app.addRubro()">
                         <i class="fas fa-plus"></i> Crear primer rubro
                     </button>
                 </div>`;
@@ -41,7 +43,6 @@ class RubrosManager {
             return;
         }
 
-        // Calcular total de porcentajes
         let totalPorcentaje = 0;
         for (const rubro of rubros) {
             totalPorcentaje += (rubro.porcentaje || 0);
@@ -79,10 +80,10 @@ class RubrosManager {
                         ${rubro.fecha || 'Sin fecha'}
                     </td>
                     <td style="text-align:center;">
-                        <button class="btn-action btn-primary" onclick="window.app?.editarRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
+                        <button class="btn-action btn-primary" onclick="window.app.editarRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
                             <i class="fas fa-pencil-alt"></i>
                         </button>
-                        <button class="btn-action btn-danger" onclick="window.app?.deleteRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
+                        <button class="btn-action btn-danger" onclick="window.app.deleteRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -110,7 +111,6 @@ class RubrosManager {
                 <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-muted);">
                     <span><i class="fas fa-info-circle" style="color:${this.tipoColor};"></i> Los rubros definen los porcentajes de evaluación</span>
                     <span><i class="fas fa-calculator" style="color:${this.tipoColor};"></i> El total debe sumar <strong>100%</strong></span>
-                    <span><i class="fas fa-upload" style="color:${this.tipoColor};"></i> Importa rubros desde archivos CSV</span>
                 </div>
             </div>`;
 
@@ -118,6 +118,7 @@ class RubrosManager {
     }
 
     async addRubro() {
+        console.log('📊 RubrosManager.addRubro llamado');
         const rubros = this.app.grades.works[this.tipo] || [];
         const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
         const restante = Math.max(0, 100 - totalActual);
@@ -174,20 +175,19 @@ class RubrosManager {
 
         if (result.isConfirmed && result.value) {
             const data = result.value;
-            const rubroData = {
+            await this.app.grades.addWork(this.app.currentSectionId, this.tipo, {
                 nombre: data.nombre,
                 porcentaje: data.porcentaje,
                 fecha: getDayMonth(),
                 activo: true
-            };
-            
-            await this.app.grades.addWork(this.app.currentSectionId, this.tipo, rubroData);
+            });
             await this.app.render();
             this.app.ui.showSuccess(`✅ Rubro "${data.nombre}" creado con ${data.porcentaje}%`);
         }
     }
 
     async editarRubro(id) {
+        console.log('📊 RubrosManager.editarRubro llamado para id:', id);
         const rubro = this.app.grades.getWorkById(this.tipo, id);
         if (!rubro) return;
 
@@ -254,6 +254,7 @@ class RubrosManager {
     }
 
     async deleteRubro(id) {
+        console.log('📊 RubrosManager.deleteRubro llamado para id:', id);
         const rubro = this.app.grades.getWorkById(this.tipo, id);
         if (!rubro) return;
         
@@ -266,6 +267,7 @@ class RubrosManager {
     }
 
     async importarRubros() {
+        console.log('📊 RubrosManager.importarRubros llamado');
         const rubros = this.app.grades.works[this.tipo] || [];
         const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
         const restante = 100 - totalActual;

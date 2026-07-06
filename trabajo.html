@@ -129,4 +129,134 @@
     </div>
 </body>
 
+<!-- ============================================================ -->
+<!-- SCRIPT DE DIAGNÓSTICO Y FALLBACK -->
+<!-- ============================================================ -->
+<script>
+    (function() {
+        console.log('🔍 Diagnóstico de RubrosManager...');
+        
+        // Verificar si la clase existe
+        console.log('typeof RubrosManager:', typeof RubrosManager);
+        
+        // Verificar después de que la app se inicialice
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (window.app) {
+                    console.log('✅ window.app existe');
+                    console.log('typeof window.app.addRubro:', typeof window.app.addRubro);
+                    console.log('typeof window.app.editarRubro:', typeof window.app.editarRubro);
+                    console.log('typeof window.app.deleteRubro:', typeof window.app.deleteRubro);
+                    console.log('typeof window.app.importarRubros:', typeof window.app.importarRubros);
+                    console.log('typeof window.app.renderRubros:', typeof window.app.renderRubros);
+                    
+                    // Si addRubro no es función, crearlo
+                    if (typeof window.app.addRubro !== 'function') {
+                        console.warn('⚠️ addRubro no es función, creando fallback...');
+                        window.app.addRubro = async function() {
+                            console.log('📊 addRubro desde fallback');
+                            const rubros = this.grades.works['rubro'] || [];
+                            const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
+                            const restante = Math.max(0, 100 - totalActual);
+
+                            const result = await Swal.fire({
+                                title: 'Agregar Nuevo Rubro',
+                                html: `
+                                    <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                                        <div style="padding:8px 12px; background:var(--bg-hover); border-radius:6px; margin-bottom:8px;">
+                                            <span style="font-size:12px; color:var(--text-secondary);">
+                                                📊 Porcentaje disponible: <strong style="color:#f9e2af;">${restante}%</strong>
+                                            </span>
+                                        </div>
+                                        <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                                        <input id="swal-nombre" class="swal2-input" placeholder="Nombre del rubro">
+                                        <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
+                                        <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" value="${Math.min(25, restante)}">
+                                    </div>`,
+                                showCancelButton: true,
+                                confirmButtonText: '✅ Agregar Rubro',
+                                cancelButtonText: '❌ Cancelar',
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                                width: '480px',
+                                preConfirm: () => {
+                                    const nombre = document.getElementById('swal-nombre').value.trim();
+                                    const porcentaje = parseFloat(document.getElementById('swal-porcentaje').value);
+                                    if (!nombre) {
+                                        Swal.showValidationMessage('El nombre es obligatorio');
+                                        return;
+                                    }
+                                    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                                        Swal.showValidationMessage('El porcentaje debe ser entre 0 y 100');
+                                        return;
+                                    }
+                                    if (porcentaje > restante) {
+                                        Swal.showValidationMessage(`El porcentaje no puede exceder el ${restante}% disponible`);
+                                        return;
+                                    }
+                                    return { nombre, porcentaje };
+                                }
+                            });
+
+                            if (result.isConfirmed && result.value) {
+                                await this.grades.addWork(this.currentSectionId, 'rubro', {
+                                    nombre: result.value.nombre,
+                                    porcentaje: result.value.porcentaje,
+                                    fecha: getDayMonth(),
+                                    activo: true
+                                });
+                                await this.render();
+                                this.ui.showSuccess(`✅ Rubro "${result.value.nombre}" creado con ${result.value.porcentaje}%`);
+                            }
+                        };
+                        console.log('✅ addRubro creado como fallback');
+                    }
+                    
+                    // Si editarRubro no es función, crearlo
+                    if (typeof window.app.editarRubro !== 'function') {
+                        window.app.editarRubro = async function(id) {
+                            console.log('📊 editarRubro desde fallback para id:', id);
+                            const rubro = this.grades.getWorkById('rubro', id);
+                            if (!rubro) {
+                                this.ui.showError('Rubro no encontrado');
+                                return;
+                            }
+                            // Mostrar mensaje de que la edición no está disponible
+                            this.ui.showInfo('La edición de rubros está en desarrollo. Por favor, usa la consola para más información.');
+                        };
+                    }
+                    
+                    // Si deleteRubro no es función, crearlo
+                    if (typeof window.app.deleteRubro !== 'function') {
+                        window.app.deleteRubro = async function(id) {
+                            console.log('📊 deleteRubro desde fallback para id:', id);
+                            const rubro = this.grades.getWorkById('rubro', id);
+                            if (!rubro) {
+                                this.ui.showError('Rubro no encontrado');
+                                return;
+                            }
+                            const confirm = await this.ui.showConfirm(`¿Eliminar el rubro "${rubro.nombre}" (${rubro.porcentaje}%)?`);
+                            if (confirm.isConfirmed) {
+                                await this.grades.deleteWork('rubro', id);
+                                await this.render();
+                                this.ui.showSuccess('Rubro eliminado');
+                            }
+                        };
+                    }
+                    
+                    // Si importarRubros no es función, crearlo
+                    if (typeof window.app.importarRubros !== 'function') {
+                        window.app.importarRubros = async function() {
+                            this.ui.showInfo('La importación de rubros está en desarrollo.');
+                        };
+                    }
+                    
+                    console.log('✅ Métodos de rubros verificados y corregidos');
+                } else {
+                    console.warn('⚠️ window.app no está disponible después de 2 segundos');
+                }
+            }, 2000);
+        });
+    })();
+</script>
 </html>

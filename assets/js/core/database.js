@@ -16,27 +16,28 @@
                     }.bind(this);
                 });
             }
-            upgrade(db) {
-                console.log('🔄 Actualizando base de datos...');
-                const stores = [
-                    { name: STORES.SECCIONES, key: 'id' },
-                    { name: STORES.ESTUDIANTES, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.TRABAJOS_COTIDIANO, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.TRABAJOS_TAREA, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.EXAMENES, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.PROYECTOS, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.CALIFICACIONES, key: ['seccionId', 'estudianteId', 'trabajoId', 'tipoTrabajo'] },
-                    { name: STORES.CONFIGURACION, key: 'clave' },
-                    { name: STORES.BITACORA, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.HORARIOS, key: 'seccionId' },
-                    { name: STORES.EVALUACIONES, key: 'seccionId' },
-                    { name: STORES.LINKS, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.ASISTENCIA, key: ['seccionId', 'fecha', 'estudianteId'], indexes: ['seccion_fecha'] },
-                    { name: STORES.PORCENTAJES, key: 'seccionId' },
-                    { name: STORES.ASISTENCIA_DETALLADA, key: 'seccionId' },
-                    { name: STORES.PLAN_ENLACES, key: 'id', indexes: ['seccionId'] },
-                    { name: STORES.PLAN_CONTENIDO, key: 'id', indexes: ['seccionId'] }
-                ];
+           upgrade(db) {
+    console.log('🔄 Actualizando base de datos...');
+    const stores = [
+        { name: STORES.SECCIONES, key: 'id' },
+        { name: STORES.ESTUDIANTES, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.TRABAJOS_COTIDIANO, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.TRABAJOS_TAREA, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.EXAMENES, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.PROYECTOS, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.TRABAJOS_RUBRO, key: 'id', indexes: ['seccionId'] },  // NUEVO
+        { name: STORES.CALIFICACIONES, key: ['seccionId', 'estudianteId', 'trabajoId', 'tipoTrabajo'] },
+        { name: STORES.CONFIGURACION, key: 'clave' },
+        { name: STORES.BITACORA, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.HORARIOS, key: 'seccionId' },
+        { name: STORES.EVALUACIONES, key: 'seccionId' },
+        { name: STORES.LINKS, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.ASISTENCIA, key: ['seccionId', 'fecha', 'estudianteId'], indexes: ['seccion_fecha'] },
+        { name: STORES.PORCENTAJES, key: 'seccionId' },
+        { name: STORES.ASISTENCIA_DETALLADA, key: 'seccionId' },
+        { name: STORES.PLAN_ENLACES, key: 'id', indexes: ['seccionId'] },
+        { name: STORES.PLAN_CONTENIDO, key: 'id', indexes: ['seccionId'] }
+    ];
                 stores.forEach(function(storeDef) {
                     if (!db.objectStoreNames.contains(storeDef.name)) {
                         const autoInc = !Array.isArray(storeDef.key);

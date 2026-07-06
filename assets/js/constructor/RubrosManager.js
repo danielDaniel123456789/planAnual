@@ -186,17 +186,30 @@ class RubrosManager {
         }
     }
 
+    // ============================================================
+    // MÉTODO EDITAR RUBRO - CORREGIDO
+    // ============================================================
     async editarRubro(id) {
         console.log('📊 RubrosManager.editarRubro llamado para id:', id);
+        
+        // Obtener el rubro por ID
         const rubro = this.app.grades.getWorkById(this.tipo, id);
-        if (!rubro) return;
+        if (!rubro) {
+            this.app.ui.showError('Rubro no encontrado');
+            return;
+        }
 
+        console.log('📊 Rubro encontrado:', rubro);
+
+        // Calcular porcentaje disponible
         const rubros = this.app.grades.works[this.tipo] || [];
         const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
         const restante = 100 - (totalActual - (rubro.porcentaje || 0));
 
+        console.log('📊 Total actual:', totalActual, 'Restante:', restante);
+
         const result = await Swal.fire({
-            title: `Editar Rubro: ${escapeHtml(rubro.nombre)}`,
+            title: `✏️ Editar Rubro: ${escapeHtml(rubro.nombre)}`,
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
                     <div style="padding:8px 12px; background:var(--bg-hover); border-radius:6px; margin-bottom:8px;">
@@ -211,9 +224,13 @@ class RubrosManager {
                     
                     <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
                     <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" value="${rubro.porcentaje || 0}">
+                    
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <i class="fas fa-info-circle"></i> El porcentaje debe ser entre 0 y ${restante}%
+                    </div>
                 </div>`,
             showCancelButton: true,
-            confirmButtonText: '💾 Guardar',
+            confirmButtonText: '💾 Guardar Cambios',
             cancelButtonText: '❌ Cancelar',
             background: 'var(--bg-card)',
             color: 'var(--text-primary)',
@@ -242,30 +259,53 @@ class RubrosManager {
         });
 
         if (result.isConfirmed && result.value) {
-            const data = result.value;
-            await this.app.grades.updateWork(this.tipo, id, {
-                nombre: data.nombre,
-                porcentaje: data.porcentaje
-            });
-            
-            await this.app.render();
-            this.app.ui.showSuccess('✅ Rubro actualizado correctamente');
+            try {
+                const data = result.value;
+                console.log('📊 Guardando cambios:', data);
+                
+                // Actualizar el rubro
+                await this.app.grades.updateWork(this.tipo, id, {
+                    nombre: data.nombre,
+                    porcentaje: data.porcentaje
+                });
+                
+                // Recargar la vista
+                await this.app.render();
+                this.app.ui.showSuccess(`✅ Rubro "${data.nombre}" actualizado correctamente`);
+            } catch (error) {
+                console.error('❌ Error al actualizar rubro:', error);
+                this.app.ui.showError('Error al actualizar el rubro');
+            }
         }
     }
 
+    // ============================================================
+    // MÉTODO ELIMINAR RUBRO
+    // ============================================================
     async deleteRubro(id) {
         console.log('📊 RubrosManager.deleteRubro llamado para id:', id);
         const rubro = this.app.grades.getWorkById(this.tipo, id);
-        if (!rubro) return;
+        if (!rubro) {
+            this.app.ui.showError('Rubro no encontrado');
+            return;
+        }
         
         const confirm = await this.app.ui.showConfirm(`¿Eliminar el rubro "${rubro.nombre}" (${rubro.porcentaje}%)?`);
         if (confirm.isConfirmed) {
-            await this.app.grades.deleteWork(this.tipo, id);
-            await this.app.render();
-            this.app.ui.showSuccess('Rubro eliminado');
+            try {
+                await this.app.grades.deleteWork(this.tipo, id);
+                await this.app.render();
+                this.app.ui.showSuccess('Rubro eliminado correctamente');
+            } catch (error) {
+                console.error('❌ Error al eliminar rubro:', error);
+                this.app.ui.showError('Error al eliminar el rubro');
+            }
         }
     }
 
+    // ============================================================
+    // MÉTODO IMPORTAR RUBROS
+    // ============================================================
     async importarRubros() {
         console.log('📊 RubrosManager.importarRubros llamado');
         const rubros = this.app.grades.works[this.tipo] || [];
@@ -321,11 +361,16 @@ class RubrosManager {
         );
         
         if (confirm.isConfirmed) {
-            for (const rubro of rubrosToImport) {
-                await this.app.grades.addWork(this.app.currentSectionId, this.tipo, rubro);
+            try {
+                for (const rubro of rubrosToImport) {
+                    await this.app.grades.addWork(this.app.currentSectionId, this.tipo, rubro);
+                }
+                await this.app.render();
+                this.app.ui.showSuccess(`✅ ${rubrosToImport.length} rubros importados correctamente`);
+            } catch (error) {
+                console.error('❌ Error al importar rubros:', error);
+                this.app.ui.showError('Error al importar rubros');
             }
-            await this.app.render();
-            this.app.ui.showSuccess(`✅ ${rubrosToImport.length} rubros importados correctamente`);
         }
     }
 }

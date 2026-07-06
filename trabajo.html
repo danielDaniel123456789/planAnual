@@ -41,10 +41,11 @@
     <script src="./assets/js/constructor/GroupModeManager.js"></script>
     <script src="./assets/js/constructor/QuickAddManager.js"></script>
 
-    <script src="./assets/js/constructor/baseApp.js"></script>
+
 
 <!-- APPS POR HERENCIA -->
 <script src="./assets/js/constructor/RubrosApp.js"></script>
+<script src="./assets/js/constructor/App.js"></script>
 
     <!-- APP PRINCIPAL -->
     <script src="./assets/js/constructor/constructor.js"></script>
@@ -263,5 +264,17 @@
             }, 2000);
         });
     })();
+
+    // Verificar que los métodos existen
+console.log('typeof window.app.editarRubro:', typeof window.app?.editarRubro);
+
+// Verificar que rubrosManager existe
+console.log('window.app.rubrosManager:', window.app?.rubrosManager);
+
+// Verificar que RubrosManager está definido
+console.log('typeof RubrosManager:', typeof RubrosManager);
+
+// Probar editar un rubro manualmente (reemplaza 1 con un ID real)
+// window.app.editarRubro(1);
 </script>
 </html>

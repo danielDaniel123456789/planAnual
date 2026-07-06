@@ -1,5 +1,5 @@
 // ============================================================
-// RubrosManager.js - Gestión de Rubros
+// RubrosManager.js - Gestión de Rubros (Edición Directa)
 // ============================================================
 
 class RubrosManager {
@@ -27,6 +27,12 @@ class RubrosManager {
                         <i class="fas fa-file-import"></i> Importar
                     </button>
                 </div>
+            </div>
+            <div style="margin-bottom:12px; padding:8px 12px; background:var(--bg-hover); border-radius:6px; border-left:3px solid #f9e2af;">
+                <span style="font-size:12px; color:var(--text-muted);">
+                    <i class="fas fa-mouse-pointer" style="color:#f9e2af;"></i> 
+                    💡 <strong>Haz clic en cualquier nombre o porcentaje</strong> para editarlo directamente
+                </span>
             </div>`;
 
         if (rubros.length === 0) {
@@ -48,16 +54,17 @@ class RubrosManager {
             totalPorcentaje += (rubro.porcentaje || 0);
         }
 
+        // Tabla con ancho 100% y celdas clickeables
         html += `
-            <div style="overflow-x:auto; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border-color);">
-                <table class="data-table">
+            <div style="overflow-x:auto; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border-color); width:100%;">
+                <table class="data-table" id="tablaRubros" style="width:100%; table-layout:auto; border-collapse:collapse;">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Nombre</th>
-                            <th>Porcentaje (%)</th>
-                            <th>Fecha</th>
-                            <th style="text-align:center;">Acciones</th>
+                            <th style="width:5%; min-width:40px;">#</th>
+                            <th style="width:40%; min-width:150px;">Nombre</th>
+                            <th style="width:25%; min-width:120px;">Porcentaje (%)</th>
+                            <th style="width:20%; min-width:100px;">Fecha</th>
+                            <th style="width:10%; text-align:center; min-width:50px;">Eliminar</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -65,40 +72,59 @@ class RubrosManager {
         for (let i = 0; i < rubros.length; i++) {
             const rubro = rubros[i];
             html += `
-                <tr>
-                    <td>${i + 1}</td>
-                    <td style="font-weight:500; color:var(--text-primary);">
-                        <i class="${this.tipoIcono}" style="color:${this.tipoColor}; margin-right:8px;"></i>
-                        ${escapeHtml(rubro.nombre)}
+                <tr id="rubro-fila-${rubro.id}">
+                    <td style="text-align:center; color:var(--text-muted); font-size:13px;">${i + 1}</td>
+                    <td style="padding:4px 6px;">
+                        <span 
+                            class="editable-cell" 
+                            id="rubro-nombre-${rubro.id}"
+                            data-id="${rubro.id}"
+                            data-field="nombre"
+                            style="display:block; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:500; color:var(--text-primary); transition:all 0.2s; border:1px solid transparent;"
+                            onclick="window.app.editarCeldaRubro(${rubro.id}, 'nombre')"
+                            onmouseover="this.style.background='rgba(249,226,175,0.1)'; this.style.borderColor='rgba(249,226,175,0.3)';"
+                            onmouseout="this.style.background='transparent'; this.style.borderColor='transparent';"
+                            title="Haz clic para editar el nombre">
+                            ${escapeHtml(rubro.nombre)}
+                        </span>
                     </td>
-                    <td>
-                        <span style="background:rgba(249,226,175,0.15); color:${this.tipoColor}; padding:2px 12px; border-radius:12px; font-weight:600;">
+                    <td style="padding:4px 6px;">
+                        <span 
+                            class="editable-cell" 
+                            id="rubro-porcentaje-${rubro.id}"
+                            data-id="${rubro.id}"
+                            data-field="porcentaje"
+                            style="display:block; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:600; color:#f9e2af; transition:all 0.2s; text-align:center; border:1px solid transparent;"
+                            onclick="window.app.editarCeldaRubro(${rubro.id}, 'porcentaje')"
+                            onmouseover="this.style.background='rgba(249,226,175,0.15)'; this.style.borderColor='rgba(249,226,175,0.3)';"
+                            onmouseout="this.style.background='transparent'; this.style.borderColor='transparent';"
+                            title="Haz clic para editar el porcentaje">
                             ${rubro.porcentaje || 0}%
                         </span>
                     </td>
-                    <td style="font-size:12px; color:var(--text-muted);">
+                    <td style="font-size:12px; color:var(--text-muted); text-align:center;">
                         ${rubro.fecha || 'Sin fecha'}
                     </td>
                     <td style="text-align:center;">
-                        <button class="btn-action btn-primary" onclick="window.app.editarRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
-                            <i class="fas fa-pencil-alt"></i>
-                        </button>
-                        <button class="btn-action btn-danger" onclick="window.app.deleteRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;">
+                        <button class="btn-action btn-danger" onclick="window.app.deleteRubro(${rubro.id})" style="padding:4px 8px; font-size:12px;" title="Eliminar rubro">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>`;
         }
 
+        const totalColor = totalPorcentaje === 100 ? '#a6e3a1' : totalPorcentaje > 100 ? '#f38ba8' : '#f9e2af';
+        const totalEmoji = totalPorcentaje === 100 ? ' ✅' : totalPorcentaje > 100 ? ' ⚠️ Excede 100%' : ' ⚠️ Faltante';
+
         html += `
                     </tbody>
                     <tfoot>
                         <tr style="border-top:2px solid var(--border-color); font-weight:bold;">
-                            <td colspan="2" style="text-align:right; color:var(--text-secondary);">TOTAL:</td>
-                            <td>
-                                <span style="background:rgba(249,226,175,0.25); color:${totalPorcentaje === 100 ? '#a6e3a1' : '#f38ba8'}; padding:2px 12px; border-radius:12px; font-weight:700;">
+                            <td colspan="2" style="text-align:right; color:var(--text-secondary); padding:8px 12px;">TOTAL:</td>
+                            <td style="text-align:center; padding:8px 12px;">
+                                <span style="background:rgba(249,226,175,0.25); color:${totalColor}; padding:4px 16px; border-radius:12px; font-weight:700; font-size:14px;">
                                     ${totalPorcentaje}%
-                                    ${totalPorcentaje === 100 ? ' ✅' : totalPorcentaje > 100 ? ' ⚠️ Excede 100%' : ' ⚠️ Faltante'}
+                                    ${totalEmoji}
                                 </span>
                             </td>
                             <td colspan="2"></td>
@@ -111,12 +137,16 @@ class RubrosManager {
                 <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-muted);">
                     <span><i class="fas fa-info-circle" style="color:${this.tipoColor};"></i> Los rubros definen los porcentajes de evaluación</span>
                     <span><i class="fas fa-calculator" style="color:${this.tipoColor};"></i> El total debe sumar <strong>100%</strong></span>
+                    <span><i class="fas fa-mouse-pointer" style="color:${this.tipoColor};"></i> <strong>Haz clic</strong> en cualquier nombre o porcentaje para editarlo</span>
                 </div>
             </div>`;
 
         container.innerHTML = html;
     }
 
+    // ============================================================
+    // AGREGAR RUBRO
+    // ============================================================
     async addRubro() {
         console.log('📊 RubrosManager.addRubro llamado');
         const rubros = this.app.grades.works[this.tipo] || [];
@@ -133,16 +163,10 @@ class RubrosManager {
                             (Total actual: ${totalActual}%)
                         </span>
                     </div>
-                    
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre del Rubro:</label>
-                    <input id="swal-nombre" class="swal2-input" placeholder="Ej. Trabajos Cotidianos, Exámenes, Proyectos...">
-                    
+                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                    <input id="swal-nombre" class="swal2-input" placeholder="Ej. Trabajos Cotidianos">
                     <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
                     <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" placeholder="Ej. 25" value="${Math.min(25, restante)}">
-                    
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                        <i class="fas fa-info-circle"></i> El porcentaje debe ser entre 0 y ${restante}%
-                    </div>
                 </div>`,
             showCancelButton: true,
             confirmButtonText: '✅ Agregar Rubro',
@@ -158,17 +182,14 @@ class RubrosManager {
                     Swal.showValidationMessage('El nombre es obligatorio');
                     return;
                 }
-                
                 if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-                    Swal.showValidationMessage('El porcentaje debe ser un número entre 0 y 100');
+                    Swal.showValidationMessage('El porcentaje debe ser entre 0 y 100');
                     return;
                 }
-                
                 if (porcentaje > restante) {
                     Swal.showValidationMessage(`El porcentaje no puede exceder el ${restante}% disponible`);
                     return;
                 }
-                
                 return { nombre, porcentaje };
             }
         });
@@ -187,100 +208,125 @@ class RubrosManager {
     }
 
     // ============================================================
-    // MÉTODO EDITAR RUBRO - CORREGIDO
+    // EDITAR CELDA DIRECTAMENTE (SIN LÁPIZ)
     // ============================================================
-    async editarRubro(id) {
-        console.log('📊 RubrosManager.editarRubro llamado para id:', id);
+    async editarCeldaRubro(id, campo) {
+        console.log(`📊 Editando rubro ${id}, campo: ${campo}`);
         
-        // Obtener el rubro por ID
         const rubro = this.app.grades.getWorkById(this.tipo, id);
         if (!rubro) {
             this.app.ui.showError('Rubro no encontrado');
             return;
         }
 
-        console.log('📊 Rubro encontrado:', rubro);
-
-        // Calcular porcentaje disponible
-        const rubros = this.app.grades.works[this.tipo] || [];
-        const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
-        const restante = 100 - (totalActual - (rubro.porcentaje || 0));
-
-        console.log('📊 Total actual:', totalActual, 'Restante:', restante);
+        const valorActual = campo === 'nombre' ? rubro.nombre : rubro.porcentaje || 0;
+        const esPorcentaje = campo === 'porcentaje';
+        
+        let restante = 100;
+        if (esPorcentaje) {
+            const rubros = this.app.grades.works[this.tipo] || [];
+            const totalActual = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
+            restante = 100 - (totalActual - (rubro.porcentaje || 0));
+        }
 
         const result = await Swal.fire({
-            title: `✏️ Editar Rubro: ${escapeHtml(rubro.nombre)}`,
+            title: esPorcentaje ? `✏️ Editar porcentaje de "${rubro.nombre}"` : `✏️ Editar nombre del rubro`,
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <div style="padding:8px 12px; background:var(--bg-hover); border-radius:6px; margin-bottom:8px;">
-                        <span style="font-size:12px; color:var(--text-secondary);">
-                            📊 Porcentaje disponible: <strong style="color:#f9e2af;">${restante}%</strong>
-                            (Total actual: ${totalActual}%)
-                        </span>
-                    </div>
-                    
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
-                    <input id="swal-nombre" class="swal2-input" value="${escapeHtml(rubro.nombre)}">
-                    
-                    <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
-                    <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" value="${rubro.porcentaje || 0}">
-                    
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                        <i class="fas fa-info-circle"></i> El porcentaje debe ser entre 0 y ${restante}%
-                    </div>
+                    ${esPorcentaje ? `
+                        <div style="padding:8px 12px; background:var(--bg-hover); border-radius:6px; margin-bottom:8px;">
+                            <span style="font-size:12px; color:var(--text-secondary);">
+                                📊 Porcentaje disponible: <strong style="color:#f9e2af;">${restante}%</strong>
+                            </span>
+                        </div>
+                        <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
+                        <input id="swal-valor" class="swal2-input" type="number" min="0" max="${restante}" value="${valorActual}" step="1">
+                        <div style="font-size:11px; color:var(--text-muted);">Rango permitido: 0% - ${restante}%</div>
+                    ` : `
+                        <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                        <input id="swal-valor" class="swal2-input" value="${escapeHtml(valorActual)}">
+                    `}
                 </div>`,
             showCancelButton: true,
-            confirmButtonText: '💾 Guardar Cambios',
-            cancelButtonText: '❌ Cancelar',
+            confirmButtonText: '💾 Guardar',
+            cancelButtonText: 'Cancelar',
             background: 'var(--bg-card)',
             color: 'var(--text-primary)',
             width: '480px',
             preConfirm: () => {
-                const nombre = document.getElementById('swal-nombre').value.trim();
-                const porcentaje = parseFloat(document.getElementById('swal-porcentaje').value);
-                
-                if (!nombre) {
-                    Swal.showValidationMessage('El nombre es obligatorio');
+                const valor = document.getElementById('swal-valor').value.trim();
+                if (!valor) {
+                    Swal.showValidationMessage('El valor es obligatorio');
                     return;
                 }
-                
-                if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-                    Swal.showValidationMessage('El porcentaje debe ser un número entre 0 y 100');
-                    return;
+                if (esPorcentaje) {
+                    const num = parseFloat(valor);
+                    if (isNaN(num) || num < 0 || num > 100) {
+                        Swal.showValidationMessage('El porcentaje debe ser entre 0 y 100');
+                        return;
+                    }
+                    if (num > restante) {
+                        Swal.showValidationMessage(`El porcentaje no puede exceder el ${restante}% disponible`);
+                        return;
+                    }
+                    return { valor: num };
                 }
-                
-                if (porcentaje > restante) {
-                    Swal.showValidationMessage(`El porcentaje no puede exceder el ${restante}% disponible`);
-                    return;
-                }
-                
-                return { nombre, porcentaje };
+                return { valor };
             }
         });
 
-        if (result.isConfirmed && result.value) {
-            try {
-                const data = result.value;
-                console.log('📊 Guardando cambios:', data);
-                
-                // Actualizar el rubro
-                await this.app.grades.updateWork(this.tipo, id, {
-                    nombre: data.nombre,
-                    porcentaje: data.porcentaje
-                });
-                
-                // Recargar la vista
-                await this.app.render();
-                this.app.ui.showSuccess(`✅ Rubro "${data.nombre}" actualizado correctamente`);
-            } catch (error) {
-                console.error('❌ Error al actualizar rubro:', error);
-                this.app.ui.showError('Error al actualizar el rubro');
+        if (!result.isConfirmed || !result.value) return;
+
+        try {
+            const nuevoValor = result.value.valor;
+            const updateData = {};
+            if (campo === 'nombre') {
+                updateData.nombre = nuevoValor;
+            } else {
+                updateData.porcentaje = nuevoValor;
             }
+            
+            await this.app.grades.updateWork(this.tipo, id, updateData);
+            
+            // Actualizar la celda sin recargar toda la tabla
+            const celdaId = `rubro-${campo}-${id}`;
+            const celda = document.getElementById(celdaId);
+            if (celda) {
+                if (campo === 'nombre') {
+                    celda.textContent = nuevoValor;
+                } else {
+                    celda.textContent = `${nuevoValor}%`;
+                }
+            }
+            
+            // Actualizar el total
+            await this.actualizarTotalRubros();
+            
+            this.app.ui.showSuccess(`✅ ${campo === 'nombre' ? 'Nombre' : 'Porcentaje'} actualizado correctamente`);
+        } catch (error) {
+            console.error('Error al actualizar rubro:', error);
+            this.app.ui.showError('Error al actualizar el rubro');
         }
     }
 
     // ============================================================
-    // MÉTODO ELIMINAR RUBRO
+    // ACTUALIZAR TOTAL DE RUBROS
+    // ============================================================
+    async actualizarTotalRubros() {
+        const rubros = this.app.grades.works[this.tipo] || [];
+        const total = rubros.reduce((sum, r) => sum + (r.porcentaje || 0), 0);
+        
+        const totalCell = document.querySelector('#tablaRubros tfoot td span');
+        if (totalCell) {
+            const totalColor = total === 100 ? '#a6e3a1' : total > 100 ? '#f38ba8' : '#f9e2af';
+            const totalEmoji = total === 100 ? ' ✅' : total > 100 ? ' ⚠️ Excede 100%' : ' ⚠️ Faltante';
+            totalCell.style.color = totalColor;
+            totalCell.textContent = `${total}% ${totalEmoji}`;
+        }
+    }
+
+    // ============================================================
+    // ELIMINAR RUBRO
     // ============================================================
     async deleteRubro(id) {
         console.log('📊 RubrosManager.deleteRubro llamado para id:', id);
@@ -292,19 +338,14 @@ class RubrosManager {
         
         const confirm = await this.app.ui.showConfirm(`¿Eliminar el rubro "${rubro.nombre}" (${rubro.porcentaje}%)?`);
         if (confirm.isConfirmed) {
-            try {
-                await this.app.grades.deleteWork(this.tipo, id);
-                await this.app.render();
-                this.app.ui.showSuccess('Rubro eliminado correctamente');
-            } catch (error) {
-                console.error('❌ Error al eliminar rubro:', error);
-                this.app.ui.showError('Error al eliminar el rubro');
-            }
+            await this.app.grades.deleteWork(this.tipo, id);
+            await this.app.render();
+            this.app.ui.showSuccess('Rubro eliminado');
         }
     }
 
     // ============================================================
-    // MÉTODO IMPORTAR RUBROS
+    // IMPORTAR RUBROS
     // ============================================================
     async importarRubros() {
         console.log('📊 RubrosManager.importarRubros llamado');
@@ -361,16 +402,11 @@ class RubrosManager {
         );
         
         if (confirm.isConfirmed) {
-            try {
-                for (const rubro of rubrosToImport) {
-                    await this.app.grades.addWork(this.app.currentSectionId, this.tipo, rubro);
-                }
-                await this.app.render();
-                this.app.ui.showSuccess(`✅ ${rubrosToImport.length} rubros importados correctamente`);
-            } catch (error) {
-                console.error('❌ Error al importar rubros:', error);
-                this.app.ui.showError('Error al importar rubros');
+            for (const rubro of rubrosToImport) {
+                await this.app.grades.addWork(this.app.currentSectionId, this.tipo, rubro);
             }
+            await this.app.render();
+            this.app.ui.showSuccess(`✅ ${rubrosToImport.length} rubros importados correctamente`);
         }
     }
 }

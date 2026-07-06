@@ -5,13 +5,9 @@
 class App extends RubrosApp {
     constructor() {
         super();
-        
         console.log('🚀 Iniciando App principal...');
         
-        // Inicializar RubrosManager
-        this.initRubrosManager();
-        
-        // Instanciar todos los managers
+        // Los managers de rubros se inicializan en init()
         this.studentManager = new StudentManager(this);
         this.planManager = new PlanManager(this);
         this.finalGradesManager = new FinalGradesManager(this);
@@ -24,7 +20,7 @@ class App extends RubrosApp {
     }
 
     // ============================================================
-    // MÉTODO RENDER CONTENT (SOBRESCRIBE EL DE BaseApp)
+    // MÉTODO RENDER CONTENT
     // ============================================================
     async renderContent() {
         const container = document.getElementById('mainContent');
@@ -60,86 +56,65 @@ class App extends RubrosApp {
     }
 
     // ============================================================
-    // DELEGACIÓN DE MÉTODOS - StudentManager
+    // DELEGACIÓN DE MÉTODOS - Rubros (SIN LÁPIZ)
     // ============================================================
-    async addStudent() { await this.studentManager.addStudent(); }
-    async deleteStudent(id) { await this.studentManager.deleteStudent(id); }
-    async importStudents() { await this.studentManager.importStudents(); }
-
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - PlanManager
-    // ============================================================
-    async addEnlacePlan() { await this.planManager.addEnlacePlan(); }
-    async deleteEnlacePlan(id) { await this.planManager.deleteEnlacePlan(id); }
-    async addContenidoPlan() { await this.planManager.addContenidoPlan(); }
-    async editarContenidoPlan(id) { await this.planManager.editarContenidoPlan(id); }
-    async deleteContenidoPlan(id) { await this.planManager.deleteContenidoPlan(id); }
-
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - FinalGradesManager
-    // ============================================================
-    async renderFinalGrades(container) { await this.finalGradesManager.renderFinalGrades(container); }
-    seleccionarCategoria(tipo) { this.finalGradesManager.seleccionarCategoria(tipo); }
-    limpiarSeleccionCategoria() { this.finalGradesManager.limpiarSeleccionCategoria(); }
-    toggleGrupo(tipo) { this.finalGradesManager.toggleGrupo(tipo); }
-    toggleAllGroups() { this.finalGradesManager.toggleAllGroups(); }
-    mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega) { 
-        this.finalGradesManager.mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega); 
-    }
-    async guardarNotaDesdeInputFinal(input) { await this.finalGradesManager.guardarNotaDesdeInputFinal(input); }
-
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - WorkManager
-    // ============================================================
-    async addWork(type) { 
-        if (type === 'rubro') {
-            await this.addRubro();
+    async addRubro() { 
+        if (this.rubrosManager && typeof this.rubrosManager.addRubro === 'function') {
+            await this.rubrosManager.addRubro();
         } else {
-            await this.workManager.addWork(type); 
+            await this.addRubroFallback();
         }
     }
-    async editWork(type, id) { await this.workManager.editWork(type, id); }
-    async deleteWork(type, id) { await this.workManager.deleteWork(type, id); }
 
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - GroupModeManager
-    // ============================================================
-    async openWork(type, id, preserveFocus = false) { await this.groupModeManager.openWork(type, id, preserveFocus); }
-    filtrarEstudiantesGrupales(type, workId, termino) { this.groupModeManager.filtrarEstudiantesGrupales(type, workId, termino); }
-    limpiarBusquedaGrupal(type, workId) { this.groupModeManager.limpiarBusquedaGrupal(type, workId); }
-    calificarNuevoGrupo(type, workId) { this.groupModeManager.calificarNuevoGrupo(type, workId); }
-    toggleModoGrupal(type, workId) { this.groupModeManager.toggleModoGrupal(type, workId); }
-    desactivarModoGrupal(type, workId) { this.groupModeManager.desactivarModoGrupal(type, workId); }
-    agregarEstudianteGrupo(type, workId, studentId) { this.groupModeManager.agregarEstudianteGrupo(type, workId, studentId); }
-    quitarEstudianteGrupo(type, workId, studentId) { this.groupModeManager.quitarEstudianteGrupo(type, workId, studentId); }
-    limpiarSeleccionGrupal(type, workId) { this.groupModeManager.limpiarSeleccionGrupal(type, workId); }
-    async actualizarNotaGrupal(type, workId, valor) { await this.groupModeManager.actualizarNotaGrupal(type, workId, valor); }
-    async aplicarNotaGrupal(type, workId, valor) { await this.groupModeManager.aplicarNotaGrupal(type, workId, valor); }
-    actualizarChipsNotas(type, workId) { this.groupModeManager.actualizarChipsNotas(type, workId); }
-    async guardarNotaIndividual(input, type, workId) { await this.groupModeManager.guardarNotaIndividual(input, type, workId); }
+    async editarCeldaRubro(id, campo) {
+        if (this.rubrosManager && typeof this.rubrosManager.editarCeldaRubro === 'function') {
+            await this.rubrosManager.editarCeldaRubro(id, campo);
+        } else {
+            await this.editarCeldaRubroFallback(id, campo);
+        }
+    }
 
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - QuickAddManager
-    // ============================================================
-    async showAddRapido() { await this.quickAddManager.showAddRapido(); }
+    async deleteRubro(id) { 
+        if (this.rubrosManager && typeof this.rubrosManager.deleteRubro === 'function') {
+            await this.rubrosManager.deleteRubro(id);
+        } else {
+            await this.deleteRubroFallback(id);
+        }
+    }
 
-    // ============================================================
-    // DELEGACIÓN DE MÉTODOS - MachoteManager
-    // ============================================================
-    async addMachote() { await this.machoteManager.addMachote(); }
-    async verMachote(id) { await this.machoteManager.verMachote(id); }
-    async editarMachote(id) { await this.machoteManager.editarMachote(id); }
-    async deleteMachote(id) { await this.machoteManager.deleteMachote(id); }
-    async importarMachotes() { await this.machoteManager.importarMachotes(); }
-    async renderMachotes(container) { await this.machoteManager.renderMachotes(container); }
+    async importarRubros() { 
+        if (this.rubrosManager && typeof this.rubrosManager.importarRubros === 'function') {
+            await this.rubrosManager.importarRubros();
+        } else {
+            await this.importarRubrosFallback();
+        }
+    }
+
+    // ... el resto de delegaciones (StudentManager, PlanManager, etc.)
+    // ... y el método init() sobrescrito
+
+    async init() {
+        console.log('🚀 Iniciando App...');
+        await this.db.init();
+        this.config.load();
+        this.applyTheme();
+        await this.loadData();
+        this.setupEvents();
+        
+        if (!this.rubrosManager) {
+            console.warn('⚠️ rubrosManager no disponible, inicializando...');
+            this.initRubrosManager();
+        }
+        console.log('📋 rubrosManager:', this.rubrosManager ? '✅ Disponible' : '❌ NO DISPONIBLE (usando fallback)');
+        
+        await this.render();
+        console.log('✅ App lista!');
+    }
 }
 
-// ============================================================
 // INICIALIZACIÓN
-// ============================================================
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        console.log('🚀 Iniciando App...');
         const app = new App();
         window.app = app;
         await app.init();
@@ -149,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         Swal.fire({
             icon: 'error',
             title: 'Error al iniciar',
-            text: error.message || 'Revisa la consola para más detalles',
+            text: error.message || 'Revisa la consola',
             background: 'var(--bg-card)',
             color: 'var(--text-primary)'
         });

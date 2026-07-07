@@ -35,6 +35,7 @@ const STORES = {
 
 const CATEGORIAS_MENU = [
     { id: 'estudiantes', nombre: 'Estudiantes', icono: 'fas fa-users', color: '#89b4fa' },
+    { id: 'bitacora', nombre: 'Bitácora', icono: 'fas fa-book', color: '#f38ba8' },
     { id: 'plan', nombre: 'Plan', icono: 'fas fa-calendar-alt', color: '#94e2d5' },
     { id: 'cotidiano', nombre: 'Trabajos Cotidianos', icono: 'fas fa-clipboard-list', color: '#89b4fa' },
     { id: 'tarea', nombre: 'Tareas', icono: 'fas fa-tasks', color: '#a6e3a1' },

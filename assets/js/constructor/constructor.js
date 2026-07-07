@@ -12,8 +12,14 @@ class App extends BaseApp {
         this.groupModeManager = new GroupModeManager(this);
         this.quickAddManager = new QuickAddManager(this);
         this.machoteManager = new MachoteManager(this);
+       this.bitacoraManager = new BitacoraManager(this);
     }
 
+
+     // Estos métodos deben estar dentro de la clase, no solo en el constructor
+    async addBitacora() { await this.bitacoraManager.addBitacora(); }
+    async editBitacora(id) { await this.bitacoraManager.editBitacora(id); }
+    async deleteBitacora(id) { await this.bitacoraManager.deleteBitacora(id); }
     // ============================================================
     // DELEGACIÓN DE MÉTODOS - StudentManager
     // ============================================================

@@ -24,6 +24,7 @@ if (typeof BaseApp === 'undefined') {
             this._seleccionGrupal = {};
             this.sidebarView = new Sidebar(this);
             this.workItemsView = new WorkItems(this);
+    
         }
 
         async init() {
@@ -81,6 +82,14 @@ if (typeof BaseApp === 'undefined') {
                 container.innerHTML = this.getEmptySectionHTML();
                 return;
             }
+        if (this.currentCategory === 'bitacora') {
+    if (this.bitacoraManager && typeof this.bitacoraManager.renderBitacora === 'function') {
+        await this.bitacoraManager.renderBitacora(container);
+    } else {
+        container.innerHTML = `<div class="empty-state"><p>Módulo de Bitácora no disponible</p></div>`;
+    }
+    return;
+}
             if (!this.currentCategory) {
                 container.innerHTML = this.getDefaultViewHTML();
                 return;
@@ -314,6 +323,8 @@ if (typeof BaseApp === 'undefined') {
             this.ui.showInfo('Función de exportación a Excel en desarrollo. Próximamente podrás descargar el archivo .xlsx');
         }
     }
+
+    
 
     // Exponer BaseApp globalmente
     window.BaseApp = BaseApp;

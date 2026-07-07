@@ -663,3 +663,8 @@
             .activity-bar { width: 48px; }
             .activity-item { width: 36px; height: 36px; font-size: 15px; }
         }
+
+        #editarSeccionBtn{
+            position: absolute;
+            right: 20px !important;
+        }

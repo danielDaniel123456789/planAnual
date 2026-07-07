@@ -13,9 +13,13 @@ class App extends BaseApp {
         this.quickAddManager = new QuickAddManager(this);
         this.machoteManager = new MachoteManager(this);
        this.bitacoraManager = new BitacoraManager(this);
+        this.rubrosManager = new RubrosManager(this); 
     }
 
-
+// ============================================================
+// DELEGACIÓN DE MÉTODOS - RubrosManager
+// ============================================================
+async editarRubro(id) { await this.rubrosManager.editRubro(id); }
      // Estos métodos deben estar dentro de la clase, no solo en el constructor
     async addBitacora() { await this.bitacoraManager.addBitacora(); }
     async editBitacora(id) { await this.bitacoraManager.editBitacora(id); }

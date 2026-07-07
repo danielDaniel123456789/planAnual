@@ -10,8 +10,66 @@ class RubrosManager {
         this.tipoIcono = 'fas fa-percent';
         this.tipoColor = '#f9e2af';
         console.log('✅ RubrosManager instanciado correctamente');
+        
     }
 
+
+    // ============================================================
+// EDITAR RUBRO COMPLETO (nombre + porcentaje)
+// ============================================================
+async editRubro(id) {
+    const rubro = this.app.grades.getWorkById(this.tipo, id);
+    if (!rubro) {
+        this.app.ui.showError('Rubro no encontrado');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: `✏️ Editar Rubro: ${escapeHtml(rubro.nombre)}`,
+        html: `
+            <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                <input id="swal-nombre" class="swal2-input" value="${escapeHtml(rubro.nombre)}">
+                <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
+                <input id="swal-porcentaje" class="swal2-input" type="number" value="${rubro.porcentaje || 0}" min="0" max="100" step="1">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '💾 Guardar',
+        cancelButtonText: 'Cancelar',
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        width: '480px',
+        preConfirm: () => {
+            const nombre = document.getElementById('swal-nombre').value.trim();
+            const porcentaje = parseFloat(document.getElementById('swal-porcentaje').value);
+            if (!nombre) {
+                Swal.showValidationMessage('El nombre es obligatorio');
+                return;
+            }
+            if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                Swal.showValidationMessage('El porcentaje debe estar entre 0 y 100');
+                return;
+            }
+            return { nombre, porcentaje };
+        }
+    });
+
+    if (result.isConfirmed && result.value) {
+        try {
+            await this.app.grades.updateWork(this.tipo, id, {
+                nombre: result.value.nombre,
+                porcentaje: result.value.porcentaje
+            });
+            // Actualizar la vista sin recargar toda la app
+            await this.app.render();
+            this.app.ui.showSuccess('✅ Rubro actualizado correctamente');
+        } catch (error) {
+            console.error('Error al editar rubro:', error);
+            this.app.ui.showError('Error al actualizar el rubro');
+        }
+    }
+}
     async renderRubros(container) {
         console.log('📊 RubrosManager.renderRubros llamado');
         const rubros = this.app.grades.works[this.tipo] || [];

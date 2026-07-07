@@ -85,14 +85,14 @@
 
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <span id="sidebarTitle">SECCIONES</span>
-                <div class="header-actions">
-                    <button class="btn-action-icon" id="addSectionBtn" title="Nueva Sección">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-            </div>
+          <div class="sidebar-header">
+    <select id="sectionSelect" style="flex:1; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px; padding:4px 8px;">
+        <option value="">-- Seleccionar sección --</option>
+    </select>
+    <button class="btn-action-icon" id="addSectionBtn" title="Nueva Sección">
+        <i class="fas fa-plus"></i>
+    </button>
+</div>
             <div class="section-select-container">
                 <select id="sectionSelect">
                     <option value="">-- Seleccionar sección --</option>
@@ -109,11 +109,18 @@
         <!-- Main Content -->
         <div class="main-content">
             <div class="section-header" id="sectionHeader">
-                <div class="section-info">
+                <div class="section-info" style="background-color: red;">
                     <i class="fas fa-graduation-cap"></i>
                     <span id="currentSectionName">Sistema de Calificaciones</span>
+
+                    <span id="editarSeccionBtn" >
+                        hola
+                    </span>
+
+                   
+
                 </div>
-                <div class="header-actions"></div>
+                <div class="header-actions" ></div>
             </div>
 
             <div class="stats-bar" id="statsBar">
@@ -123,7 +130,7 @@
                 <div class="stat"><i class="fas fa-chart-line"></i> <span id="statPorcentaje">0%</span> promedio</div>
             </div>
 
-            <div class="content-pane" id="mainContent">
+            <div class="content-pane" id="mainContent" style="background-color: red;">
                 <div style="display:flex; justify-content:center; align-items:center; height:100%; color:var(--text-secondary);">
                     <div style="text-align:center;">
                         <i class="fas fa-folder-open" style="font-size:48px; margin-bottom:16px; opacity:0.3;"></i>

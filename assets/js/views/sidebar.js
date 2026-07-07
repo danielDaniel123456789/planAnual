@@ -5,6 +5,8 @@ class Sidebar {
         this.select = document.getElementById('sectionSelect');
     }
     render(sectionsList, currentId) {
+
+        
         this.renderSelect(sectionsList, currentId);
         if (!this.container) return;
         if (!sectionsList || sectionsList.length === 0) {

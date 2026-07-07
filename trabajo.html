@@ -86,18 +86,17 @@
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
           <div class="sidebar-header">
-    <select id="sectionSelect" style="flex:1; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px; padding:4px 8px;">
+            <div class="section-select-container">
+    <select id="sectionSelect"  >
         <option value="">-- Seleccionar sección --</option>
     </select>
+            </div>
+
     <button class="btn-action-icon" id="addSectionBtn" title="Nueva Sección">
         <i class="fas fa-plus"></i>
     </button>
 </div>
-            <div class="section-select-container">
-                <select id="sectionSelect">
-                    <option value="">-- Seleccionar sección --</option>
-                </select>
-            </div>
+         
             <div class="sidebar-content" id="sidebarContent">
                 <div style="padding:20px; text-align:center; color:var(--text-secondary);">
                     <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
@@ -109,7 +108,7 @@
         <!-- Main Content -->
         <div class="main-content">
             <div class="section-header" id="sectionHeader">
-                <div class="section-info" style="background-color: red;">
+                <div class="section-info" >
                     <i class="fas fa-graduation-cap"></i>
                     <span id="currentSectionName">Sistema de Calificaciones</span>
 

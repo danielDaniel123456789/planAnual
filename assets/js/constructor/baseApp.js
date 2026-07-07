@@ -339,6 +339,109 @@ async editarNombreSeccion() {
             await this.render();
         }
 
+        // ============================================================
+// ELIMINAR SECCIÓN COMPLETA (con todos sus datos)
+// ============================================================
+async eliminarSeccion() {
+    const current = this.sections.getCurrent();
+    if (!current) {
+        this.ui.showError('No hay sección seleccionada');
+        return;
+    }
+
+    const confirm = await this.ui.showConfirm(
+        `¿Eliminar la sección "${current.nombre}"? Se perderán TODOS los datos asociados (estudiantes, calificaciones, trabajos, plan, bitácora, asistencia, etc.).`
+    );
+
+    if (!confirm.isConfirmed) return;
+
+    const sectionId = current.id;
+
+    try {
+        // Función auxiliar para eliminar todos los registros de un store que coincidan con seccionId
+        const deleteBySection = async (storeName, keyName = 'seccionId') => {
+            const all = await this.db.getAll(storeName);
+            for (const item of all) {
+                if (item[keyName] === sectionId) {
+                    const pk = Array.isArray(this.db.db.transaction(storeName).objectStore(storeName).keyPath) 
+                        ? item[this.db.db.transaction(storeName).objectStore(storeName).keyPath] 
+                        : item.id;
+                    await this.db.delete(storeName, pk);
+                }
+            }
+        };
+
+        // 1. Eliminar estudiantes
+        await deleteBySection(STORES.ESTUDIANTES);
+
+        // 2. Eliminar trabajos de todos los tipos
+        const tiposTrabajo = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
+        const storeMap = {
+            cotidiano: STORES.TRABAJOS_COTIDIANO,
+            tarea: STORES.TRABAJOS_TAREA,
+            examen: STORES.EXAMENES,
+            proyecto: STORES.PROYECTOS,
+            rubro: STORES.TRABAJOS_RUBRO
+        };
+        for (const tipo of tiposTrabajo) {
+            await deleteBySection(storeMap[tipo]);
+        }
+
+        // 3. Eliminar plan (enlaces y contenido)
+        await deleteBySection(STORES.PLAN_ENLACES);
+        await deleteBySection(STORES.PLAN_CONTENIDO);
+
+        // 4. Eliminar bitácora
+        await deleteBySection(STORES.BITACORA);
+
+        // 5. Eliminar asistencia diaria y detallada
+        await deleteBySection(STORES.ASISTENCIA);
+        await deleteBySection(STORES.ASISTENCIA_DETALLADA, 'seccionId'); // la clave es seccionId
+
+        // 6. Eliminar configuraciones (porcentajes, horarios, evaluaciones)
+        await deleteBySection(STORES.PORCENTAJES, 'seccionId');
+        await deleteBySection(STORES.HORARIOS, 'seccionId');
+        await deleteBySection(STORES.EVALUACIONES, 'seccionId');
+
+        // 7. Eliminar calificaciones (clave compuesta)
+        const allCalif = await this.db.getAll(STORES.CALIFICACIONES);
+        for (const calif of allCalif) {
+            if (calif.seccionId === sectionId) {
+                await this.db.delete(STORES.CALIFICACIONES, [
+                    calif.seccionId,
+                    calif.estudianteId,
+                    calif.trabajoId,
+                    calif.tipoTrabajo
+                ]);
+            }
+        }
+
+        // 8. Finalmente eliminar la sección
+        await this.sections.delete(sectionId);
+
+        // 9. Recargar datos y actualizar interfaz
+        await this.sections.load();
+
+        if (this.sections.list.length === 0) {
+            await this.sections.create('Sección Principal');
+            await this.sections.load();
+        }
+
+        this.currentSectionId = this.sections.currentId;
+        await this.loadSectionData(this.currentSectionId);
+        this.currentCategory = null;
+        await this.render();
+
+        this.ui.showSuccess('Sección eliminada correctamente');
+    } catch (error) {
+        console.error('Error al eliminar sección:', error);
+        this.ui.showError('Ocurrió un error al eliminar la sección. Revisa la consola.');
+    }
+}
+
+
+
+
         async onCategoryClick(categoryId) {
             this.currentCategory = categoryId;
             await this.render();

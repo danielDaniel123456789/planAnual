@@ -71,10 +71,39 @@ if (typeof BaseApp === 'undefined') {
         async render() {
             this.sidebarView.render(this.sections.list, this.currentSectionId);
             const current = this.sections.getCurrent();
-            document.getElementById('currentSectionName').textContent = current ? escapeHtml(current.nombre) : 'Selecciona una sección';
+         // Busca esta parte:
+// document.getElementById('currentSectionName').textContent = current ? escapeHtml(current.nombre) : 'Selecciona una sección';
+
+// Y sustitúyela por esto:
+const sectionInfoDiv = document.querySelector('.section-info');
+if (sectionInfoDiv) {
+    if (current) {
+        sectionInfoDiv.innerHTML = `
+            <i class="fas fa-graduation-cap"></i>
+            <span id="currentSectionName">
+                ${escapeHtml(current.nombre)}
+                <button class="btn-action btn-primary" onclick="window.app.editarNombreSeccion()" 
+                        style="padding:2px 8px; margin-left:8px; font-size:12px;">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn-action btn-danger" onclick="window.app.eliminarSeccion()" 
+                        style="padding:2px 8px; margin-left:4px; font-size:12px;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </span>
+        `;
+    } else {
+        sectionInfoDiv.innerHTML = `
+            <i class="fas fa-graduation-cap"></i>
+            <span id="currentSectionName">Selecciona una sección</span>
+        `;
+    }
+}
+         
             this.updateStats();
             await this.renderContent();
         }
+
 
         async renderContent() {
             const container = document.getElementById('mainContent');
@@ -126,6 +155,24 @@ if (typeof BaseApp === 'undefined') {
         // ============================================================
         // MÉTODO FALLBACK PARA RUBROS (si no está definido en la app)
         // ============================================================
+async editarNombreSeccion() {
+    const current = this.sections.getCurrent();
+    if (!current) {
+        this.ui.showError('No hay sección seleccionada');
+        return;
+    }
+    const result = await this.ui.showPrompt('Nuevo nombre de la sección:', 'text', current.nombre);
+    if (result.isConfirmed && result.value) {
+        const nombre = result.value.trim();
+        if (nombre) {
+            await this.sections.update(current.id, nombre);
+            await this.sections.load();
+            await this.render();
+            this.ui.showSuccess('Nombre actualizado');
+        }
+    }
+}
+
         async renderRubrosFallback(container) {
             console.log('📊 Usando renderRubrosFallback');
             const rubros = this.grades.works['rubro'] || [];

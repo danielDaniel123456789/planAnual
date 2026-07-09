@@ -109,7 +109,7 @@ async calcularAsistenciaEstudiante(studentId) {
             if (reg.estado === 'ausente') {
                 leccionesPerdidas += lec;
             } else if (reg.estado === 'tardia') {
-                leccionesPerdidas += lec * 0.5;
+                leccionesPerdidas += lec * 0.5; // o 1? En el informe se usa 1, aquí se usa 0.5.
             }
         }
     }

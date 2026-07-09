@@ -1,5 +1,5 @@
-const DB_NAME = 'SistemaCalificacionesV48DB';
-const DB_VERSION = 48;  // sube la versión
+const DB_NAME = 'SistemaCalificacionesV48DB9';
+const DB_VERSION = 49;  // sube la versión
 
 const STORES = {
     SECCIONES: 'secciones',

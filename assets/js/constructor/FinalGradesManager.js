@@ -60,38 +60,64 @@ class FinalGradesManager {
     // ------------------------------------------------------------
     // Método auxiliar: calcular porcentaje de asistencia real
     // ------------------------------------------------------------
-    async calcularAsistenciaEstudiante(studentId) {
-        const seccionId = this.app.currentSectionId;
-        if (!seccionId) return 0;
+async calcularAsistenciaEstudiante(studentId) {
+    const seccionId = this.app.currentSectionId;
+    if (!seccionId) return 0;
 
-        // Obtener todos los registros de asistencia de la sección
-        const todos = await this.app.attendance.getAllBySection(seccionId);
-        if (todos.length === 0) return 0;
+    const todos = await this.app.attendance.getAllBySection(seccionId);
+    if (todos.length === 0) return 100;
 
-        // Obtener fechas únicas (total de clases)
-        const fechas = new Set();
-        for (const reg of todos) {
-            fechas.add(reg.fecha);
+    // 1. Total de lecciones por día (último registro)
+    const leccionesPorDia = new Map();
+    for (const reg of todos) {
+        let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
+        if (fecha && fecha.includes('/')) {
+            const partes = fecha.split('/');
+            fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
         }
-        const totalClases = fechas.size;
-        if (totalClases === 0) return 0;
-
-        // Filtrar registros del estudiante
-        const registrosEst = todos.filter(r => r.estudianteId === studentId);
-        let faltasInjustificadas = 0;
-        let tardias = 0;
-        // Las justificadas no penalizan
-
-        for (const r of registrosEst) {
-            if (r.estado === 'ausente') faltasInjustificadas++;
-            else if (r.estado === 'tardia') tardias++;
+        const lec = reg.lecciones || 6;
+        const ts = reg.timestamp || reg.fecha;
+        if (!leccionesPorDia.has(fecha) || ts > leccionesPorDia.get(fecha).timestamp) {
+            leccionesPorDia.set(fecha, { lecciones: lec, timestamp: ts });
         }
-
-        const faltasEquivalentes = faltasInjustificadas + (tardias * 0.5);
-        const asistidas = Math.max(0, totalClases - faltasEquivalentes);
-        const porcentaje = Math.min(100, Math.round((asistidas / totalClases) * 100));
-        return porcentaje;
     }
+    let totalLecciones = 0;
+    for (const entry of leccionesPorDia.values()) {
+        totalLecciones += entry.lecciones;
+    }
+    if (totalLecciones === 0) return 100;
+
+    // 2. Lecciones perdidas del estudiante (último registro por día)
+    const estudianteIdNum = Number(studentId);
+    const registrosEst = todos.filter(r => Number(r.estudianteId) === estudianteIdNum);
+    let leccionesPerdidas = 0;
+    if (registrosEst.length > 0) {
+        const registrosPorDia = new Map();
+        for (const reg of registrosEst) {
+            let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
+            if (fecha && fecha.includes('/')) {
+                const partes = fecha.split('/');
+                fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+            }
+            const ts = reg.timestamp || reg.fecha;
+            if (!registrosPorDia.has(fecha) || ts > registrosPorDia.get(fecha).timestamp) {
+                registrosPorDia.set(fecha, reg);
+            }
+        }
+        for (const [fecha, reg] of registrosPorDia) {
+            const lec = reg.lecciones || 6;
+            if (reg.estado === 'ausente') {
+                leccionesPerdidas += lec;
+            } else if (reg.estado === 'tardia') {
+                leccionesPerdidas += lec * 0.5;
+            }
+        }
+    }
+
+    const asistidas = Math.max(0, totalLecciones - leccionesPerdidas);
+    const porcentaje = Math.min(100, Math.round((asistidas / totalLecciones) * 100));
+    return porcentaje;
+}
 
     // ------------------------------------------------------------
     // Render principal
@@ -150,14 +176,16 @@ class FinalGradesManager {
             let items = [];
             let esAsistencia = false;
 
-            if (tipo === 'asistencia') {
-                if (hayAsistencia) {
-                    esAsistencia = true;
-                    items = [{ id: 'asistencia', nombre: 'Asistencia', puntosMax: 100, esAsistencia: true }];
-                }
-            } else {
-                items = columnasAgrupadas[tipo] || [];
-            }
+          if (tipo === 'asistencia') {
+    // Verificar si el porcentaje de asistencia está activo
+    const porcentajeAsistencia = this.app.grades.percentages?.asistencia;
+    if (porcentajeAsistencia && porcentajeAsistencia.activo) {
+        esAsistencia = true;
+        items = [{ id: 'asistencia', nombre: 'Asistencia', puntosMax: 100, esAsistencia: true }];
+    }
+} else {
+    items = columnasAgrupadas[tipo] || [];
+}
 
             if (items.length === 0) continue;
 
@@ -409,15 +437,30 @@ class FinalGradesManager {
                 if (col.esGrupo) {
                     let sumaGrupo = 0;
                     let tieneNota = false;
-                    
-                    if (col.esAsistencia) {
-                        // Asistencia: calcular porcentaje real
-                        const porcentajeAsistencia = await this.calcularAsistenciaEstudiante(student.id);
-                        if (porcentajeAsistencia !== null) {
-                            sumaGrupo = porcentajeAsistencia;
-                            tieneNota = true;
-                        }
-                    } else {
+                   if (col.esAsistencia) {
+    // Calcular el porcentaje de asistencia (0-100)
+    const porcentajeAsistencia = await this.calcularAsistenciaEstudiante(student.id);
+    // Obtener el porcentaje asignado a asistencia (ej. 10)
+    const porcentajeAsignado = this.app.grades.percentages?.asistencia?.porcentaje || 10;
+    // Calcular el valor ponderado (ej. 50% * 10% = 5%)
+    const notaPonderada = (porcentajeAsistencia * porcentajeAsignado) / 100;
+    // Redondear a 1 decimal
+    const notaMostrar = notaPonderada > 0 ? Math.round(notaPonderada * 10) / 10 : 0;
+
+    // Sumar a la suma total del estudiante
+    sumaTotalEstudiante += notaPonderada;
+
+    // Clase CSS para colorear según aprobado/reprobado (se puede ajustar)
+    const clase = notaPonderada >= 70 ? 'aprobado' : 'reprobado';
+
+    html += `
+        <td class="nota-cell ${clase}" style="background:${colorBg}; text-align:center;">
+            <span style="font-weight:600; font-size:13px; color:${notaPonderada >= 70 ? '#a6e3a1' : '#f38ba8'};">
+                ${notaMostrar > 0 ? notaMostrar : '-'}
+            </span>
+            <span style="display:block; font-size:7px; color:var(--text-muted);">(peso ${porcentajeAsignado}%)</span>
+        </td>`;
+}else {
                         for (const item of col.items) {
                             const nota = this.app.grades.getGrade(student.id, item.id, col.tipo);
                             if (nota !== null && !isNaN(nota)) {

@@ -343,72 +343,58 @@ class AsistenciaManager {
         }
     }
 
-    async crearRegistro(estudianteId, seccionId, fecha, timestamp, estado) {
-        const nuevoRegistro = {
-            seccionId,
-            fecha,
-            timestamp,
-            estudianteId,
-            estado,
-            lecciones: this.leccionesPorDefecto
-        };
-        const id = await this.app.db.add(STORES.ASISTENCIA, nuevoRegistro);
-        // Guardar el id en el mapa para futuras actualizaciones
-        this.registrosActuales[estudianteId] = id;
-        return id;
-    }
+   async crearRegistro(estudianteId, seccionId, fecha, timestamp, estado) {
+    const nuevoRegistro = {
+        seccionId,
+        fecha: fecha || getDayMonth(),        // DD/MM/YYYY
+        timestamp: timestamp || new Date().toISOString(), // ISO con hora
+        estudianteId,
+        estado,
+        lecciones: this.leccionesPorDefecto
+    };
+    const id = await this.app.db.add(STORES.ASISTENCIA, nuevoRegistro);
+    this.registrosActuales[estudianteId] = id;
+    return id;
+}
 
     // ------------------------------------------------------------
     // Nuevo pase de lista (crea un nuevo timestamp para hoy)
     // ------------------------------------------------------------
     async nuevoPaseLista() {
-        const seccionId = this.app.currentSectionId;
-        if (!seccionId) {
-            this.app.ui.showError('No hay sección seleccionada');
-            return;
-        }
-
-        const estudiantes = this.getEstudiantes();
-        if (estudiantes.length === 0) {
-            this.app.ui.showError('No hay estudiantes para registrar asistencia');
-            return;
-        }
-
-        // Si no hay estados cargados, inicializar todos a presente
-        if (Object.keys(this.estadosActuales).length === 0) {
-            for (const est of estudiantes) {
-                this.estadosActuales[est.id] = 'presente';
-            }
-        }
-
-        const hoy = getDayMonth();
-        const timestamp = new Date().toISOString(); // nuevo timestamp
-
-        try {
-            for (const est of estudiantes) {
-                const estado = this.estadosActuales[est.id] || 'presente';
-                const nuevoReg = {
-                    seccionId,
-                    fecha: hoy,
-                    timestamp,
-                    estudianteId: est.id,
-                    estado,
-                    lecciones: this.leccionesPorDefecto
-                };
-                const id = await this.app.db.add(STORES.ASISTENCIA, nuevoReg);
-                // Actualizar mapa de ids para la fecha actual (hoy)
-                this.registrosActuales[est.id] = id;
-            }
-            this.app.ui.showSuccess(`✅ Nuevo pase de lista del ${hoy} guardado (${timestamp})`);
-            // Mostrar el nuevo registro
-            this.fechaSeleccionada = timestamp;
-            await this.renderAsistencia(document.getElementById('mainContent'));
-            this.app.updateStats();
-        } catch (error) {
-            console.error('Error guardando nuevo pase de lista:', error);
-            this.app.ui.showError('Error al guardar: ' + error.message);
-        }
+    const seccionId = this.app.currentSectionId;
+    if (!seccionId) {
+        this.app.ui.showError('No hay sección seleccionada');
+        return;
     }
+    const estudiantes = this.getEstudiantes();
+    if (estudiantes.length === 0) {
+        this.app.ui.showError('No hay estudiantes para registrar asistencia');
+        return;
+    }
+    const hoy = getDayMonth();
+    const timestamp = new Date().toISOString();
+    try {
+        for (const est of estudiantes) {
+            const nuevoReg = {
+                seccionId,
+                fecha: hoy,
+                timestamp,
+                estudianteId: est.id,
+                estado: 'presente',   // <-- Todos presentes
+                lecciones: this.leccionesPorDefecto
+            };
+            const id = await this.app.db.add(STORES.ASISTENCIA, nuevoReg);
+            this.registrosActuales[est.id] = id;
+        }
+        this.app.ui.showSuccess(`✅ Nuevo pase de lista del ${hoy} guardado (todos presentes)`);
+        this.fechaSeleccionada = timestamp;
+        await this.renderAsistencia(document.getElementById('mainContent'));
+        this.app.updateStats();
+    } catch (error) {
+        console.error('Error guardando nuevo pase de lista:', error);
+        this.app.ui.showError('Error al guardar: ' + error.message);
+    }
+}
 
     // ------------------------------------------------------------
     // Navegación por historial y filtros
@@ -473,103 +459,348 @@ class AsistenciaManager {
         return `${dia}/${mes}/${anio} ${hora}:${min}`;
     }
 
-    // ------------------------------------------------------------
-    // Informe por estudiante
-    // ------------------------------------------------------------
-    async mostrarInformeEstudiante() {
-        const seccionId = this.app.currentSectionId;
-        if (!seccionId) {
-            this.app.ui.showError('No hay sección seleccionada');
-            return;
-        }
+    
+async mostrarInformeEstudiante() {
+    const seccionId = this.app.currentSectionId;
+    if (!seccionId) {
+        this.app.ui.showError('No hay sección seleccionada');
+        return;
+    }
 
-        const estudiantes = this.getEstudiantes();
-        if (estudiantes.length === 0) {
-            this.app.ui.showError('No hay estudiantes');
-            return;
-        }
+    const estudiantes = this.getEstudiantes();
+    if (estudiantes.length === 0) {
+        this.app.ui.showError('No hay estudiantes');
+        return;
+    }
 
-        const todos = await this.getRegistros();
-        const fechasUnicas = new Set(todos.map(r => r.fecha));
-        const totalClases = fechasUnicas.size;
+    const pesoAsistencia = this.app.grades.percentages?.asistencia?.porcentaje || 10;
+    const todos = await this.getRegistros();
 
-        const informe = [];
-        for (const est of estudiantes) {
-            const registrosEst = todos.filter(r => r.estudianteId === est.id);
-            let ausenciasJustificadas = 0, ausenciasInjustificadas = 0, tardias = 0;
-            for (const r of registrosEst) {
-                if (r.estado === 'justificada') ausenciasJustificadas++;
-                else if (r.estado === 'ausente') ausenciasInjustificadas++;
-                else if (r.estado === 'tardia') tardias++;
-            }
-            const faltasEquivalentes = ausenciasInjustificadas + (tardias * 0.5);
-            const asistidas = Math.max(0, totalClases - faltasEquivalentes);
-            const porcentaje = totalClases > 0 ? Math.min(100, Math.round((asistidas / totalClases) * 100)) : 100;
+    // Si quieres calcular el total de lecciones como la suma de TODOS los registros (no agrupados)
+    // O podrías seguir agrupando por día para el total de lecciones, pero para el detalle usar todos los registros.
+    // Decido: total de lecciones = suma de lecciones de todos los registros (cada pase de lista)
+    // Esto da una visión de "cuántas veces se ha pasado lista" en total.
 
-            informe.push({
-                nombre: this.app.students.getFullName(est),
-                totalClases,
-                ausenciasJustificadas,
-                ausenciasInjustificadas,
-                tardias,
-                porcentaje
+    // Para el total de lecciones, sumamos todas las lecciones de todos los registros
+    let totalLeccionesGlobal = 0;
+    for (const reg of todos) {
+        totalLeccionesGlobal += (reg.lecciones || 6);
+    }
+
+    const informe = [];
+    for (const est of estudiantes) {
+        const estudianteId = Number(est.id);
+        const registrosEst = todos.filter(r => Number(r.estudianteId) === estudianteId);
+
+        // Contadores por estado (sobre todos los registros, no agrupados)
+        let leccionesPresente = 0;
+        let leccionesAusente = 0;
+        let leccionesTardia = 0;
+        let leccionesJustificada = 0;
+        let diasFaltados = 0;
+
+        // Detalle por cada registro (timestamp)
+        const detalleRegistros = [];
+
+        for (const reg of registrosEst) {
+            const lec = reg.lecciones || 6;
+            const estado = reg.estado || 'presente';
+            // Guardar fecha y hora formateada
+            const fechaDisplay = this.formatearTimestamp(reg.timestamp || reg.fecha);
+            detalleRegistros.push({
+                timestamp: reg.timestamp,
+                fecha: reg.fecha,
+                fechaDisplay: fechaDisplay,
+                estado: estado,
+                lecciones: lec,
+                id: reg.id
             });
+
+            switch (estado) {
+                case 'presente':
+                    leccionesPresente += lec;
+                    break;
+                case 'ausente':
+                    leccionesAusente += lec;
+                    diasFaltados++;
+                    break;
+                case 'tardia':
+                    leccionesTardia += lec;
+                    diasFaltados++;
+                    break;
+                case 'justificada':
+                    leccionesJustificada += lec;
+                    break;
+                default:
+                    leccionesPresente += lec;
+                    break;
+            }
         }
 
-        let tablaHtml = `
-            <div style="max-height:400px; overflow-y:auto; margin-top:12px;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="background:var(--bg-hover);">
-                            <th style="padding:8px; text-align:left;">Estudiante (click para filtrar)</th>
-                            <th style="padding:8px; text-align:center;">Clases</th>
-                            <th style="padding:8px; text-align:center;">Justificadas</th>
-                            <th style="padding:8px; text-align:center;">Injustificadas</th>
-                            <th style="padding:8px; text-align:center;">Tardías</th>
-                            <th style="padding:8px; text-align:center;">% Asistencia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        for (const item of informe) {
-            const color = item.porcentaje >= 80 ? '#a6e3a1' : (item.porcentaje >= 60 ? '#f9e2af' : '#f38ba8');
-            tablaHtml += `
-                <tr style="border-bottom:1px solid var(--border-color); cursor:pointer;" 
-                    onclick="window.app.asistenciaManager.filtrarPorEstudiante('${escapeHtml(item.nombre)}')"
-                    onmouseover="this.style.background='var(--bg-hover)'" 
-                    onmouseout="this.style.background='transparent'">
-                    <td style="padding:6px 8px;">${escapeHtml(item.nombre)}</td>
-                    <td style="padding:6px 8px; text-align:center;">${item.totalClases}</td>
-                    <td style="padding:6px 8px; text-align:center;">${item.ausenciasJustificadas}</td>
-                    <td style="padding:6px 8px; text-align:center;">${item.ausenciasInjustificadas}</td>
-                    <td style="padding:6px 8px; text-align:center;">${item.tardias}</td>
-                    <td style="padding:6px 8px; text-align:center; font-weight:bold; color:${color};">${item.porcentaje}%</td>
-                </tr>
-            `;
-        }
-        tablaHtml += `
-                    </tbody>
-                </table>
-            </div>
-            <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
-                * Una tardía equivale a media falta. El porcentaje se calcula sobre el total de clases (${totalClases}).
-                <br>💡 Haz clic en cualquier estudiante para filtrar y editar sus registros.
-            </div>
-        `;
+        // Ordenar detalle por timestamp (más reciente primero)
+        detalleRegistros.sort((a, b) => {
+            if (a.timestamp && b.timestamp) {
+                return b.timestamp.localeCompare(a.timestamp);
+            }
+            return b.fecha.localeCompare(a.fecha);
+        });
 
-        Swal.fire({
-            title: '📊 Informe de Asistencia por Estudiante',
-            html: tablaHtml,
-            showCancelButton: true,
-            cancelButtonText: 'Cerrar',
-            confirmButtonText: 'Ok',
-            showCloseButton: true,
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            width: '650px'
+        // Calcular lecciones perdidas (ausente + 0.5*tardia)
+        const leccionesPerdidas = leccionesAusente + (leccionesTardia * 0.5);
+
+        let porcentajeAsistencia = 100;
+        if (registrosEst.length > 0 && totalLeccionesGlobal > 0) {
+            const asistidas = Math.max(0, totalLeccionesGlobal - leccionesPerdidas);
+            porcentajeAsistencia = Math.min(100, Math.round((asistidas / totalLeccionesGlobal) * 100));
+        } else if (registrosEst.length === 0) {
+            porcentajeAsistencia = 100;
+        }
+
+        const notaPonderada = (porcentajeAsistencia * pesoAsistencia) / 100;
+        const notaMostrar = Math.round(notaPonderada * 10) / 10;
+
+        informe.push({
+            nombre: this.app.students.getFullName(est),
+            totalRegistros: registrosEst.length,  // Número de pases de lista
+            diasFaltados: diasFaltados,
+            leccionesPresente: Math.round(leccionesPresente * 10) / 10,
+            leccionesAusente: Math.round(leccionesAusente * 10) / 10,
+            leccionesTardia: Math.round(leccionesTardia * 10) / 10,
+            leccionesJustificada: Math.round(leccionesJustificada * 10) / 10,
+            leccionesPerdidas: Math.round(leccionesPerdidas * 10) / 10,
+            totalLecciones: totalLeccionesGlobal,
+            porcentajeAsistencia: porcentajeAsistencia,
+            notaPonderada: notaMostrar,
+            detalleRegistros: detalleRegistros  // Array con todos los registros individuales
         });
     }
 
+    this.mostrarTablaInforme(informe, pesoAsistencia);
+}
+
+
+// Método auxiliar para mostrar la tabla (extraído para claridad)
+mostrarTablaInforme(informe, pesoAsistencia) {
+    let html = `
+        <style>
+            .tree-row {
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .tree-row:hover {
+                background: var(--bg-hover) !important;
+            }
+            .tree-detail {
+                display: none;
+                background: var(--bg-card-secondary);
+                border-left: 3px solid var(--border-color);
+            }
+            .tree-detail.open {
+                display: table-row;
+            }
+            .tree-detail td {
+                padding: 4px 8px;
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            .estado-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            .estado-presente { background: rgba(166,227,161,0.2); color: #a6e3a1; }
+            .estado-ausente { background: rgba(243,139,168,0.2); color: #f38ba8; }
+            .estado-tardia { background: rgba(249,226,175,0.2); color: #f9e2af; }
+            .estado-justificada { background: rgba(137,180,250,0.2); color: #89b4fa; }
+            .toggle-icon {
+                display: inline-block;
+                transition: transform 0.3s;
+                margin-right: 6px;
+            }
+            .toggle-icon.open {
+                transform: rotate(90deg);
+            }
+            .tree-row td:first-child {
+                position: sticky;
+                left: 0;
+                background: var(--bg-card);
+                z-index: 1;
+            }
+            .tree-detail td:first-child {
+                position: sticky;
+                left: 0;
+                background: var(--bg-card-secondary);
+                z-index: 1;
+            }
+            .detalle-tabla {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12px;
+                background: transparent;
+            }
+            .detalle-tabla th {
+                padding: 4px 8px;
+                text-align: left;
+                background: var(--bg-hover);
+                font-weight: 600;
+            }
+            .detalle-tabla td {
+                padding: 4px 8px;
+                border-bottom: 1px solid var(--border-color);
+            }
+        </style>
+        <div style="max-height:500px; overflow-y:auto; margin-top:12px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="background:var(--bg-hover); position:sticky; top:0; z-index:3;">
+                        <th style="padding:8px; text-align:left; min-width:140px;">Estudiante</th>
+                        <th style="padding:8px; text-align:center;">Pases</th>
+                        <th style="padding:8px; text-align:center;">Faltados</th>
+                        <th style="padding:8px; text-align:center; background:rgba(166,227,161,0.1);">✅ Presente</th>
+                        <th style="padding:8px; text-align:center; background:rgba(243,139,168,0.1);">❌ Ausente</th>
+                        <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.1);">⏰ Tardía</th>
+                        <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);">📝 Justificada</th>
+                        <th style="padding:8px; text-align:center;">Perdidas</th>
+                        <th style="padding:8px; text-align:center;">Total Lec.</th>
+                        <th style="padding:8px; text-align:center;">% Asist.</th>
+                        <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.15); color:#f9e2af;">Nota (${pesoAsistencia}%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    for (const item of informe) {
+        const color = item.porcentajeAsistencia >= 80 ? '#a6e3a1' : (item.porcentajeAsistencia >= 60 ? '#f9e2af' : '#f38ba8');
+        const notaColor = item.notaPonderada >= (pesoAsistencia * 0.7) ? '#a6e3a1' : '#f38ba8';
+        const rowId = `row-${item.nombre.replace(/\s+/g, '_')}`;
+        const detailId = `detail-${item.nombre.replace(/\s+/g, '_')}`;
+
+        html += `
+            <tr class="tree-row" id="${rowId}" onclick="window.app.asistenciaManager.toggleDetalle('${detailId}', this)" style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:6px 8px; font-weight:500;">
+                    <span class="toggle-icon" id="icon-${detailId}">▶</span>
+                    ${escapeHtml(item.nombre)}
+                </td>
+                <td style="padding:6px 8px; text-align:center;">${item.totalRegistros}</td>
+                <td style="padding:6px 8px; text-align:center;">${item.diasFaltados}</td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(166,227,161,0.05);">${item.leccionesPresente}</td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(243,139,168,0.05);">${item.leccionesAusente}</td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(249,226,175,0.05);">${item.leccionesTardia}</td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(137,180,250,0.05);">${item.leccionesJustificada}</td>
+                <td style="padding:6px 8px; text-align:center;">${item.leccionesPerdidas}</td>
+                <td style="padding:6px 8px; text-align:center;">${item.totalLecciones}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:bold; color:${color};">${item.porcentajeAsistencia}%</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:${notaColor}; background:rgba(249,226,175,0.05);">
+                    ${item.notaPonderada}
+                </td>
+            </tr>
+            <tr class="tree-detail" id="${detailId}">
+                <td colspan="11" style="padding:0;">
+                    <div style="padding:8px 16px; background:var(--bg-card-secondary);">
+                        <table class="detalle-tabla">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:140px;">📅 Fecha y Hora</th>
+                                    <th style="text-align:center;">Estado</th>
+                                    <th style="text-align:center;">Lecciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        if (item.detalleRegistros && item.detalleRegistros.length > 0) {
+            for (const reg of item.detalleRegistros) {
+                const estadoLabel = {
+                    'presente': '✅ Presente',
+                    'ausente': '❌ Ausente',
+                    'tardia': '⏰ Tardía',
+                    'justificada': '📝 Justificada'
+                }[reg.estado] || reg.estado;
+
+                const estadoClass = {
+                    'presente': 'estado-presente',
+                    'ausente': 'estado-ausente',
+                    'tardia': 'estado-tardia',
+                    'justificada': 'estado-justificada'
+                }[reg.estado] || '';
+
+                html += `
+                    <tr>
+                        <td>${reg.fechaDisplay}</td>
+                        <td style="text-align:center;">
+                            <span class="estado-badge ${estadoClass}">${estadoLabel}</span>
+                        </td>
+                        <td style="text-align:center;">${reg.lecciones}</td>
+                    </tr>
+                `;
+            }
+        } else {
+            html += `
+                <tr>
+                    <td colspan="3" style="padding:8px; text-align:center; color:var(--text-muted);">Sin registros</td>
+                </tr>
+            `;
+        }
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+            * Una tardía equivale a <strong>media lección</strong> perdida.<br>
+            💡 La <strong>Nota</strong> es el porcentaje de asistencia ponderado por el peso asignado (${pesoAsistencia}%).<br>
+            📌 Haz clic en el nombre de un estudiante para expandir/colapsar el detalle de todos sus pases de lista.
+        </div>
+    `;
+
+    Swal.fire({
+        title: '📊 Informe de Asistencia por Estudiante (historial completo)',
+        html: html,
+        showCancelButton: true,
+        cancelButtonText: 'Cerrar',
+        confirmButtonText: 'Ok',
+        showCloseButton: true,
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        width: '1100px'
+    });
+}
+
+
+toggleDetalle(detailId, rowElement) {
+    const detailRow = document.getElementById(detailId);
+    const icon = document.getElementById(`icon-${detailId}`);
+    if (!detailRow) return;
+
+    const isOpen = detailRow.classList.contains('open');
+    if (isOpen) {
+        detailRow.classList.remove('open');
+        if (icon) icon.classList.remove('open');
+    } else {
+        detailRow.classList.add('open');
+        if (icon) icon.classList.add('open');
+        // Cerrar otros detalles (opcional)
+        // Si quieres que solo se abra uno a la vez, descomenta esto:
+        // document.querySelectorAll('.tree-detail.open').forEach(row => {
+        //     if (row.id !== detailId) {
+        //         row.classList.remove('open');
+        //         const otherIcon = document.getElementById(`icon-${row.id}`);
+        //         if (otherIcon) otherIcon.classList.remove('open');
+        //     }
+        // });
+    }
+}
     // ------------------------------------------------------------
     // Configuración de porcentaje
     // ------------------------------------------------------------

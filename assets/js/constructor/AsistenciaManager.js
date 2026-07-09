@@ -7,8 +7,8 @@ class AsistenciaManager {
         this.app = app;
         this.filtro = '';
         this.fechaSeleccionada = null;
-        this.estadosActuales = {};       // { estudianteId: estado }
-        this.registrosActuales = {};     // { estudianteId: id_del_registro } para actualizar directamente
+        this.estadosActuales = {};
+        this.registrosActuales = {};
         this.porcentajeAsignado = 10;
         this.leccionesPorDefecto = 6;
         this.estudiantesCache = [];
@@ -162,13 +162,11 @@ class AsistenciaManager {
         this.registrosActuales = {};
         this.estadosActuales = {};
 
-        // Si hay registros de hoy, los usamos, si no, inicializamos con presente
         for (const est of estudiantes) {
             const reg = registrosHoy.find(r => r.estudianteId === est.id);
             if (reg) {
                 this.estadosActuales[est.id] = reg.estado;
-                this.registrosActuales[est.id] = reg.id;  // guardamos el id para actualizar
-                // Actualizar lecciones globales si todos tienen el mismo valor
+                this.registrosActuales[est.id] = reg.id;
                 if (registrosHoy.length > 0) {
                     const lec = reg.lecciones || this.leccionesPorDefecto;
                     const allSame = registrosHoy.every(r => r.lecciones === lec);
@@ -180,7 +178,7 @@ class AsistenciaManager {
                 }
             } else {
                 this.estadosActuales[est.id] = 'presente';
-                this.registrosActuales[est.id] = null;  // no existe aún
+                this.registrosActuales[est.id] = null;
             }
         }
         return this.construirTabla(estudiantes, 'hoy');
@@ -193,12 +191,10 @@ class AsistenciaManager {
         this.registrosActuales = {};
         this.estadosActuales = {};
 
-        // Mapa de estudiante -> estado
         const mapa = {};
         for (const r of registros) {
             mapa[r.estudianteId] = { estado: r.estado, id: r.id };
         }
-        // Si hay registros, actualizar lecciones por defecto si todas coinciden
         if (registros.length > 0) {
             const lec = registros[0].lecciones || this.leccionesPorDefecto;
             const allSame = registros.every(r => r.lecciones === lec);
@@ -281,10 +277,9 @@ class AsistenciaManager {
     }
 
     // ------------------------------------------------------------
-    // Guardado automático al cambiar estado
+    // Guardado automático al cambiar estado (sin duplicados)
     // ------------------------------------------------------------
     async cambiarEstadoYGuardar(estudianteId, nuevoEstado) {
-        // Actualizar estado en memoria
         this.estadosActuales[estudianteId] = nuevoEstado;
 
         const seccionId = this.app.currentSectionId;
@@ -298,32 +293,24 @@ class AsistenciaManager {
             : this.fechaSeleccionada.split('T')[0].split('-').reverse().join('/');
 
         const timestamp = this.fechaSeleccionada === 'hoy' 
-            ? new Date().toISOString()   // Para hoy, usamos timestamp actual (podríamos usar el mismo si ya existe)
-            : this.fechaSeleccionada;     // Para historial, usamos el timestamp de esa fecha
+            ? new Date().toISOString()
+            : this.fechaSeleccionada;
 
-        // Si es "hoy", necesitamos saber si ya existe un registro para este estudiante en la fecha de hoy (sin timestamp fijo)
-        // Para simplificar, buscamos por secciónId, fecha y estudianteId, y actualizamos o creamos.
-        // Pero como tenemos el id en this.registrosActuales, lo usamos si existe.
         const registroId = this.registrosActuales[estudianteId];
 
         try {
             if (registroId) {
-                // Actualizar registro existente
                 const registro = await this.app.db.get(STORES.ASISTENCIA, registroId);
                 if (registro) {
                     registro.estado = nuevoEstado;
-                    // Las lecciones se mantienen (no se cambian aquí)
                     await this.app.db.put(STORES.ASISTENCIA, registro);
                 } else {
-                    // Si por alguna razón no se encuentra, crear nuevo
                     await this.crearRegistro(estudianteId, seccionId, fecha, timestamp, nuevoEstado);
                 }
             } else {
-                // Crear nuevo registro
                 await this.crearRegistro(estudianteId, seccionId, fecha, timestamp, nuevoEstado);
             }
 
-            // Mostrar mensaje breve (toast)
             const nombreEstudiante = this.app.students.getFullName(
                 this.app.students.getById(estudianteId)
             );
@@ -339,62 +326,76 @@ class AsistenciaManager {
         } catch (error) {
             console.error('Error guardando estado:', error);
             this.app.ui.showError('Error al guardar el cambio');
-            // Revertir el select al estado anterior (no implementado por simplicidad)
         }
     }
 
-   async crearRegistro(estudianteId, seccionId, fecha, timestamp, estado) {
-    const nuevoRegistro = {
-        seccionId,
-        fecha: fecha || getDayMonth(),        // DD/MM/YYYY
-        timestamp: timestamp || new Date().toISOString(), // ISO con hora
-        estudianteId,
-        estado,
-        lecciones: this.leccionesPorDefecto
-    };
-    const id = await this.app.db.add(STORES.ASISTENCIA, nuevoRegistro);
-    this.registrosActuales[estudianteId] = id;
-    return id;
-}
+    async crearRegistro(estudianteId, seccionId, fecha, timestamp, estado) {
+        const nuevoRegistro = {
+            seccionId,
+            fecha: fecha || getDayMonth(),
+            timestamp: timestamp || new Date().toISOString(),
+            estudianteId,
+            estado,
+            lecciones: this.leccionesPorDefecto
+        };
+        const id = await this.app.db.add(STORES.ASISTENCIA, nuevoRegistro);
+        this.registrosActuales[estudianteId] = id;
+        return id;
+    }
 
     // ------------------------------------------------------------
-    // Nuevo pase de lista (crea un nuevo timestamp para hoy)
+    // Nuevo pase de lista (actualiza en lugar de insertar)
     // ------------------------------------------------------------
     async nuevoPaseLista() {
-    const seccionId = this.app.currentSectionId;
-    if (!seccionId) {
-        this.app.ui.showError('No hay sección seleccionada');
-        return;
-    }
-    const estudiantes = this.getEstudiantes();
-    if (estudiantes.length === 0) {
-        this.app.ui.showError('No hay estudiantes para registrar asistencia');
-        return;
-    }
-    const hoy = getDayMonth();
-    const timestamp = new Date().toISOString();
-    try {
-        for (const est of estudiantes) {
-            const nuevoReg = {
-                seccionId,
-                fecha: hoy,
-                timestamp,
-                estudianteId: est.id,
-                estado: 'presente',   // <-- Todos presentes
-                lecciones: this.leccionesPorDefecto
-            };
-            const id = await this.app.db.add(STORES.ASISTENCIA, nuevoReg);
-            this.registrosActuales[est.id] = id;
+        const seccionId = this.app.currentSectionId;
+        if (!seccionId) {
+            this.app.ui.showError('No hay sección seleccionada');
+            return;
         }
-        this.app.ui.showSuccess(`✅ Nuevo pase de lista del ${hoy} guardado (todos presentes)`);
-        this.fechaSeleccionada = timestamp;
-        await this.renderAsistencia(document.getElementById('mainContent'));
-        this.app.updateStats();
-    } catch (error) {
-        console.error('Error guardando nuevo pase de lista:', error);
-        this.app.ui.showError('Error al guardar: ' + error.message);
+        const estudiantes = this.getEstudiantes();
+        if (estudiantes.length === 0) {
+            this.app.ui.showError('No hay estudiantes para registrar asistencia');
+            return;
+        }
+        const hoy = getDayMonth();
+        const timestamp = new Date().toISOString();
+
+        try {
+            // Obtener todos los registros de hoy para esta sección
+            const todos = await this.app.db.getByIndex(STORES.ASISTENCIA, 'seccionId', seccionId);
+            
+            for (const est of estudiantes) {
+                const existente = todos.find(r => r.fecha === hoy && r.estudianteId === est.id);
+                if (existente) {
+                    // Actualizar existente: estado presente, timestamp nuevo, lecciones actuales
+                    existente.estado = 'presente';
+                    existente.timestamp = timestamp;
+                    existente.lecciones = this.leccionesPorDefecto;
+                    await this.app.db.put(STORES.ASISTENCIA, existente);
+                    this.registrosActuales[est.id] = existente.id;
+                } else {
+                    const nuevoReg = {
+                        seccionId,
+                        fecha: hoy,
+                        timestamp,
+                        estudianteId: est.id,
+                        estado: 'presente',
+                        lecciones: this.leccionesPorDefecto
+                    };
+                    const id = await this.app.db.add(STORES.ASISTENCIA, nuevoReg);
+                    this.registrosActuales[est.id] = id;
+                }
+            }
+
+            this.app.ui.showSuccess(`✅ Nuevo pase de lista del ${hoy} guardado (todos presentes)`);
+            this.fechaSeleccionada = timestamp;
+            await this.renderAsistencia(document.getElementById('mainContent'));
+            this.app.updateStats();
+        } catch (error) {
+            console.error('Error guardando nuevo pase de lista:', error);
+            this.app.ui.showError('Error al guardar: ' + error.message);
+        }
     }
-}
 
     // ------------------------------------------------------------
     // Navegación por historial y filtros
@@ -408,7 +409,6 @@ class AsistenciaManager {
             container.innerHTML = await this.renderTablaFecha(timestamp);
         }
         this.aplicarFiltro();
-        // Actualizar botones activos
         document.querySelectorAll('.historial-btn').forEach(btn => {
             btn.classList.toggle('btn-primary', btn.dataset.timestamp === timestamp);
             btn.classList.toggle('btn-secondary', btn.dataset.timestamp !== timestamp);
@@ -459,7 +459,30 @@ class AsistenciaManager {
         return `${dia}/${mes}/${anio} ${hora}:${min}`;
     }
 
-    
+    // ------------------------------------------------------------
+    // NUEVO: Toggle de detalle en el informe
+    // ------------------------------------------------------------
+    toggleDetalle(detailId, rowElement) {
+        const detailRow = document.getElementById(detailId);
+        const icon = document.getElementById(`icon-${detailId}`);
+        if (!detailRow) return;
+
+        const isOpen = detailRow.classList.contains('open');
+        if (isOpen) {
+            detailRow.classList.remove('open');
+            if (icon) icon.classList.remove('open');
+        } else {
+            detailRow.classList.add('open');
+            if (icon) icon.classList.add('open');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // INFORME POR ESTUDIANTE (con desglose por día y tardía = 1 lección)
+    // ------------------------------------------------------------
+    // ============================================================
+// INFORME POR ESTUDIANTE (con desglose por día y tardía = 1 lección)
+// ============================================================
 async mostrarInformeEstudiante() {
     const seccionId = this.app.currentSectionId;
     if (!seccionId) {
@@ -476,83 +499,99 @@ async mostrarInformeEstudiante() {
     const pesoAsistencia = this.app.grades.percentages?.asistencia?.porcentaje || 10;
     const todos = await this.getRegistros();
 
-    // Si quieres calcular el total de lecciones como la suma de TODOS los registros (no agrupados)
-    // O podrías seguir agrupando por día para el total de lecciones, pero para el detalle usar todos los registros.
-    // Decido: total de lecciones = suma de lecciones de todos los registros (cada pase de lista)
-    // Esto da una visión de "cuántas veces se ha pasado lista" en total.
-
-    // Para el total de lecciones, sumamos todas las lecciones de todos los registros
-    let totalLeccionesGlobal = 0;
+    // 1. Calcular total de lecciones por día (último registro por día)
+    const leccionesPorDia = new Map(); // fecha -> { lecciones, timestamp }
     for (const reg of todos) {
-        totalLeccionesGlobal += (reg.lecciones || 6);
+        let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
+        if (fecha && fecha.includes('/')) {
+            const partes = fecha.split('/');
+            fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+        }
+        const lec = reg.lecciones || 6;
+        const ts = reg.timestamp || reg.fecha;
+        if (!leccionesPorDia.has(fecha) || ts > leccionesPorDia.get(fecha).timestamp) {
+            leccionesPorDia.set(fecha, { lecciones: lec, timestamp: ts });
+        }
+    }
+    let totalLecciones = 0;
+    for (const entry of leccionesPorDia.values()) {
+        totalLecciones += entry.lecciones;
     }
 
+    // 2. Construir informe por estudiante con detalle por día
     const informe = [];
     for (const est of estudiantes) {
         const estudianteId = Number(est.id);
         const registrosEst = todos.filter(r => Number(r.estudianteId) === estudianteId);
 
-        // Contadores por estado (sobre todos los registros, no agrupados)
         let leccionesPresente = 0;
         let leccionesAusente = 0;
         let leccionesTardia = 0;
         let leccionesJustificada = 0;
         let diasFaltados = 0;
+        let diasPresente = 0;
+        let diasAusente = 0;
+        let diasTardia = 0;
+        let diasJustificada = 0;
+        let tieneRegistros = registrosEst.length > 0;
 
-        // Detalle por cada registro (timestamp)
-        const detalleRegistros = [];
+        const detalleDias = [];
 
-        for (const reg of registrosEst) {
-            const lec = reg.lecciones || 6;
-            const estado = reg.estado || 'presente';
-            // Guardar fecha y hora formateada
-            const fechaDisplay = this.formatearTimestamp(reg.timestamp || reg.fecha);
-            detalleRegistros.push({
-                timestamp: reg.timestamp,
-                fecha: reg.fecha,
-                fechaDisplay: fechaDisplay,
-                estado: estado,
-                lecciones: lec,
-                id: reg.id
-            });
+        if (tieneRegistros) {
+            const registrosPorDia = new Map();
+            for (const reg of registrosEst) {
+                let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
+                if (fecha && fecha.includes('/')) {
+                    const partes = fecha.split('/');
+                    fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                }
+                const ts = reg.timestamp || reg.fecha;
+                if (!registrosPorDia.has(fecha) || ts > registrosPorDia.get(fecha).timestamp) {
+                    registrosPorDia.set(fecha, reg);
+                }
+            }
 
-            switch (estado) {
-                case 'presente':
-                    leccionesPresente += lec;
-                    break;
-                case 'ausente':
-                    leccionesAusente += lec;
-                    diasFaltados++;
-                    break;
-                case 'tardia':
-                    leccionesTardia += lec;
-                    diasFaltados++;
-                    break;
-                case 'justificada':
-                    leccionesJustificada += lec;
-                    break;
-                default:
-                    leccionesPresente += lec;
-                    break;
+            for (const [fecha, reg] of registrosPorDia) {
+                const lec = reg.lecciones || 6;
+                const estado = reg.estado || 'presente';
+                detalleDias.push({ fecha, estado, lecciones: lec });
+
+                switch (estado) {
+                    case 'presente':
+                        leccionesPresente += lec;
+                        diasPresente++;
+                        break;
+                    case 'ausente':
+                        leccionesAusente += lec;
+                        diasAusente++;
+                        diasFaltados++;
+                        break;
+                    case 'tardia':
+                        leccionesTardia += 1;          // Solo 1 lección es tardía
+                        leccionesPresente += (lec - 1); // El resto son presentes
+                        diasTardia++;
+                        diasFaltados++;
+                        break;
+                    case 'justificada':
+                        leccionesJustificada += lec;
+                        diasJustificada++;
+                        break;
+                    default:
+                        leccionesPresente += lec;
+                        diasPresente++;
+                        break;
+                }
             }
         }
 
-        // Ordenar detalle por timestamp (más reciente primero)
-        detalleRegistros.sort((a, b) => {
-            if (a.timestamp && b.timestamp) {
-                return b.timestamp.localeCompare(a.timestamp);
-            }
-            return b.fecha.localeCompare(a.fecha);
-        });
-
-        // Calcular lecciones perdidas (ausente + 0.5*tardia)
-        const leccionesPerdidas = leccionesAusente + (leccionesTardia * 0.5);
+        // Calcular lecciones perdidas: ausente (todas) + tardía (1 lección)
+        const leccionesPerdidas = leccionesAusente + leccionesTardia;
 
         let porcentajeAsistencia = 100;
-        if (registrosEst.length > 0 && totalLeccionesGlobal > 0) {
-            const asistidas = Math.max(0, totalLeccionesGlobal - leccionesPerdidas);
-            porcentajeAsistencia = Math.min(100, Math.round((asistidas / totalLeccionesGlobal) * 100));
-        } else if (registrosEst.length === 0) {
+        if (tieneRegistros && totalLecciones > 0) {
+            const asistidas = Math.max(0, totalLecciones - leccionesPerdidas);
+            porcentajeAsistencia = Math.min(100, Math.round((asistidas / totalLecciones) * 100));
+        } else if (!tieneRegistros) {
             porcentajeAsistencia = 100;
         }
 
@@ -561,25 +600,30 @@ async mostrarInformeEstudiante() {
 
         informe.push({
             nombre: this.app.students.getFullName(est),
-            totalRegistros: registrosEst.length,  // Número de pases de lista
+            totalDias: leccionesPorDia.size,
             diasFaltados: diasFaltados,
+            diasPresente: diasPresente,
+            diasAusente: diasAusente,
+            diasTardia: diasTardia,
+            diasJustificada: diasJustificada,
             leccionesPresente: Math.round(leccionesPresente * 10) / 10,
             leccionesAusente: Math.round(leccionesAusente * 10) / 10,
             leccionesTardia: Math.round(leccionesTardia * 10) / 10,
             leccionesJustificada: Math.round(leccionesJustificada * 10) / 10,
             leccionesPerdidas: Math.round(leccionesPerdidas * 10) / 10,
-            totalLecciones: totalLeccionesGlobal,
+            totalLecciones: totalLecciones,
             porcentajeAsistencia: porcentajeAsistencia,
             notaPonderada: notaMostrar,
-            detalleRegistros: detalleRegistros  // Array con todos los registros individuales
+            detalleDias: detalleDias
         });
     }
 
     this.mostrarTablaInforme(informe, pesoAsistencia);
 }
 
-
-// Método auxiliar para mostrar la tabla (extraído para claridad)
+// ============================================================
+// Mostrar tabla del informe (con árbol expandible)
+// ============================================================
 mostrarTablaInforme(informe, pesoAsistencia) {
     let html = `
         <style>
@@ -634,34 +678,18 @@ mostrarTablaInforme(informe, pesoAsistencia) {
                 background: var(--bg-card-secondary);
                 z-index: 1;
             }
-            .detalle-tabla {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 12px;
-                background: transparent;
-            }
-            .detalle-tabla th {
-                padding: 4px 8px;
-                text-align: left;
-                background: var(--bg-hover);
-                font-weight: 600;
-            }
-            .detalle-tabla td {
-                padding: 4px 8px;
-                border-bottom: 1px solid var(--border-color);
-            }
         </style>
         <div style="max-height:500px; overflow-y:auto; margin-top:12px;">
             <table style="width:100%; border-collapse:collapse; font-size:13px;">
                 <thead>
                     <tr style="background:var(--bg-hover); position:sticky; top:0; z-index:3;">
-                        <th style="padding:8px; text-align:left; min-width:140px;">Estudiante</th>
-                        <th style="padding:8px; text-align:center;">Pases</th>
+                        <th style="padding:8px; text-align:left; min-width:120px;">Estudiante</th>
+                        <th style="padding:8px; text-align:center;">Días</th>
                         <th style="padding:8px; text-align:center;">Faltados</th>
-                        <th style="padding:8px; text-align:center; background:rgba(166,227,161,0.1);">✅ Presente</th>
-                        <th style="padding:8px; text-align:center; background:rgba(243,139,168,0.1);">❌ Ausente</th>
-                        <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.1);">⏰ Tardía</th>
-                        <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);">📝 Justificada</th>
+                        <th style="padding:8px; text-align:center; background:rgba(166,227,161,0.1);">✅ Presente<br><small>(días/lecc.)</small></th>
+                        <th style="padding:8px; text-align:center; background:rgba(243,139,168,0.1);">❌ Ausente<br><small>(días/lecc.)</small></th>
+                        <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.1);">⏰ Tardía<br><small>(días/lecc.)</small></th>
+                        <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);">📝 Justificada<br><small>(días/lecc.)</small></th>
                         <th style="padding:8px; text-align:center;">Perdidas</th>
                         <th style="padding:8px; text-align:center;">Total Lec.</th>
                         <th style="padding:8px; text-align:center;">% Asist.</th>
@@ -683,12 +711,20 @@ mostrarTablaInforme(informe, pesoAsistencia) {
                     <span class="toggle-icon" id="icon-${detailId}">▶</span>
                     ${escapeHtml(item.nombre)}
                 </td>
-                <td style="padding:6px 8px; text-align:center;">${item.totalRegistros}</td>
+                <td style="padding:6px 8px; text-align:center;">${item.totalDias}</td>
                 <td style="padding:6px 8px; text-align:center;">${item.diasFaltados}</td>
-                <td style="padding:6px 8px; text-align:center; background:rgba(166,227,161,0.05);">${item.leccionesPresente}</td>
-                <td style="padding:6px 8px; text-align:center; background:rgba(243,139,168,0.05);">${item.leccionesAusente}</td>
-                <td style="padding:6px 8px; text-align:center; background:rgba(249,226,175,0.05);">${item.leccionesTardia}</td>
-                <td style="padding:6px 8px; text-align:center; background:rgba(137,180,250,0.05);">${item.leccionesJustificada}</td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(166,227,161,0.05);">
+                    ${item.diasPresente}<br><small>${item.leccionesPresente}</small>
+                </td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(243,139,168,0.05);">
+                    ${item.diasAusente}<br><small>${item.leccionesAusente}</small>
+                </td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(249,226,175,0.05);">
+                    ${item.diasTardia}<br><small>${item.leccionesTardia}</small>
+                </td>
+                <td style="padding:6px 8px; text-align:center; background:rgba(137,180,250,0.05);">
+                    ${item.diasJustificada}<br><small>${item.leccionesJustificada}</small>
+                </td>
                 <td style="padding:6px 8px; text-align:center;">${item.leccionesPerdidas}</td>
                 <td style="padding:6px 8px; text-align:center;">${item.totalLecciones}</td>
                 <td style="padding:6px 8px; text-align:center; font-weight:bold; color:${color};">${item.porcentajeAsistencia}%</td>
@@ -699,73 +735,78 @@ mostrarTablaInforme(informe, pesoAsistencia) {
             <tr class="tree-detail" id="${detailId}">
                 <td colspan="11" style="padding:0;">
                     <div style="padding:8px 16px; background:var(--bg-card-secondary);">
-                        <table class="detalle-tabla">
+                        <table style="width:100%; border-collapse:collapse; font-size:12px; background:transparent;">
                             <thead>
-                                <tr>
-                                    <th style="min-width:140px;">📅 Fecha y Hora</th>
-                                    <th style="text-align:center;">Estado</th>
-                                    <th style="text-align:center;">Lecciones</th>
+                                <tr style="background:var(--bg-hover);">
+                                    <th style="padding:4px 8px; text-align:left;">Fecha</th>
+                                    <th style="padding:4px 8px; text-align:center;">Estado</th>
+                                    <th style="padding:4px 8px; text-align:center;">Lecciones</th>
                                 </tr>
                             </thead>
                             <tbody>
         `;
 
-        if (item.detalleRegistros && item.detalleRegistros.length > 0) {
-            for (const reg of item.detalleRegistros) {
+        if (item.detalleDias && item.detalleDias.length > 0) {
+            for (const dia of item.detalleDias) {
                 const estadoLabel = {
                     'presente': '✅ Presente',
                     'ausente': '❌ Ausente',
-                    'tardia': '⏰ Tardía',
+                    'tardia': '⏰ Tardía (1 lección)',
                     'justificada': '📝 Justificada'
-                }[reg.estado] || reg.estado;
+                }[dia.estado] || dia.estado;
 
                 const estadoClass = {
                     'presente': 'estado-presente',
                     'ausente': 'estado-ausente',
                     'tardia': 'estado-tardia',
                     'justificada': 'estado-justificada'
-                }[reg.estado] || '';
+                }[dia.estado] || '';
+
+                let leccionesMostrar = dia.lecciones;
+                if (dia.estado === 'tardia') {
+                    leccionesMostrar = `1 tardía + ${dia.lecciones - 1} presentes`;
+                }
 
                 html += `
-                    <tr>
-                        <td>${reg.fechaDisplay}</td>
-                        <td style="text-align:center;">
+                    <tr style="border-bottom:1px solid var(--border-color);">
+                        <td style="padding:4px 8px;">${dia.fecha}</td>
+                        <td style="padding:4px 8px; text-align:center;">
                             <span class="estado-badge ${estadoClass}">${estadoLabel}</span>
                         </td>
-                        <td style="text-align:center;">${reg.lecciones}</td>
+                        <td style="padding:4px 8px; text-align:center;">${leccionesMostrar}</td>
                     </tr>
                 `;
             }
         } else {
             html += `
                 <tr>
-                    <td colspan="3" style="padding:8px; text-align:center; color:var(--text-muted);">Sin registros</td>
+                    <td colspan="3" style="padding:8px; text-align:center; color:var(--text-muted);">Sin registros detallados</td>
                 </tr>
             `;
         }
 
         html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        `;
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            `;
     }
 
     html += `
-                </tbody>
-            </table>
-        </div>
-        <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
-            * Una tardía equivale a <strong>media lección</strong> perdida.<br>
-            💡 La <strong>Nota</strong> es el porcentaje de asistencia ponderado por el peso asignado (${pesoAsistencia}%).<br>
-            📌 Haz clic en el nombre de un estudiante para expandir/colapsar el detalle de todos sus pases de lista.
-        </div>
-    `;
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+                * Tardía equivale a <strong>1 lección perdida</strong>; el resto del día se cuenta como presente.<br>
+                💡 La <strong>Nota</strong> es el porcentaje de asistencia ponderado por el peso asignado (${pesoAsistencia}%).<br>
+                📌 Haz clic en el nombre de un estudiante para expandir/colapsar el detalle por día.
+            </div>
+        `;
 
     Swal.fire({
-        title: '📊 Informe de Asistencia por Estudiante (historial completo)',
+        title: '📊 Informe de Asistencia por Estudiante (basado en lecciones)',
         html: html,
         showCancelButton: true,
         cancelButtonText: 'Cerrar',
@@ -777,30 +818,197 @@ mostrarTablaInforme(informe, pesoAsistencia) {
     });
 }
 
+    // ------------------------------------------------------------
+    // Mostrar tabla del informe (con árbol expandible)
+    // ------------------------------------------------------------
+    mostrarTablaInforme(informe, pesoAsistencia) {
+        let html = `
+            <style>
+                .tree-row {
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                .tree-row:hover {
+                    background: var(--bg-hover) !important;
+                }
+                .tree-detail {
+                    display: none;
+                    background: var(--bg-card-secondary);
+                    border-left: 3px solid var(--border-color);
+                }
+                .tree-detail.open {
+                    display: table-row;
+                }
+                .tree-detail td {
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                }
+                .estado-badge {
+                    display: inline-block;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                .estado-presente { background: rgba(166,227,161,0.2); color: #a6e3a1; }
+                .estado-ausente { background: rgba(243,139,168,0.2); color: #f38ba8; }
+                .estado-tardia { background: rgba(249,226,175,0.2); color: #f9e2af; }
+                .estado-justificada { background: rgba(137,180,250,0.2); color: #89b4fa; }
+                .toggle-icon {
+                    display: inline-block;
+                    transition: transform 0.3s;
+                    margin-right: 6px;
+                }
+                .toggle-icon.open {
+                    transform: rotate(90deg);
+                }
+                .tree-row td:first-child {
+                    position: sticky;
+                    left: 0;
+                    background: var(--bg-card);
+                    z-index: 1;
+                }
+                .tree-detail td:first-child {
+                    position: sticky;
+                    left: 0;
+                    background: var(--bg-card-secondary);
+                    z-index: 1;
+                }
+            </style>
+            <div style="max-height:500px; overflow-y:auto; margin-top:12px;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="background:var(--bg-hover); position:sticky; top:0; z-index:3;">
+                            <th style="padding:8px; text-align:left; min-width:120px;">Estudiante</th>
+                            <th style="padding:8px; text-align:center;">Días</th>
+                            <th style="padding:8px; text-align:center;">Faltados</th>
+                            <th style="padding:8px; text-align:center; background:rgba(166,227,161,0.1);">✅ Presente</th>
+                            <th style="padding:8px; text-align:center; background:rgba(243,139,168,0.1);">❌ Ausente</th>
+                            <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.1);">⏰ Tardía</th>
+                            <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);">📝 Justificada</th>
+                            <th style="padding:8px; text-align:center;">Perdidas</th>
+                            <th style="padding:8px; text-align:center;">Total Lec.</th>
+                            <th style="padding:8px; text-align:center;">% Asist.</th>
+                            <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.15); color:#f9e2af;">Nota (${pesoAsistencia}%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
 
-toggleDetalle(detailId, rowElement) {
-    const detailRow = document.getElementById(detailId);
-    const icon = document.getElementById(`icon-${detailId}`);
-    if (!detailRow) return;
+        for (const item of informe) {
+            const color = item.porcentajeAsistencia >= 80 ? '#a6e3a1' : (item.porcentajeAsistencia >= 60 ? '#f9e2af' : '#f38ba8');
+            const notaColor = item.notaPonderada >= (pesoAsistencia * 0.7) ? '#a6e3a1' : '#f38ba8';
+            const rowId = `row-${item.nombre.replace(/\s+/g, '_')}`;
+            const detailId = `detail-${item.nombre.replace(/\s+/g, '_')}`;
 
-    const isOpen = detailRow.classList.contains('open');
-    if (isOpen) {
-        detailRow.classList.remove('open');
-        if (icon) icon.classList.remove('open');
-    } else {
-        detailRow.classList.add('open');
-        if (icon) icon.classList.add('open');
-        // Cerrar otros detalles (opcional)
-        // Si quieres que solo se abra uno a la vez, descomenta esto:
-        // document.querySelectorAll('.tree-detail.open').forEach(row => {
-        //     if (row.id !== detailId) {
-        //         row.classList.remove('open');
-        //         const otherIcon = document.getElementById(`icon-${row.id}`);
-        //         if (otherIcon) otherIcon.classList.remove('open');
-        //     }
-        // });
+            html += `
+                <tr class="tree-row" id="${rowId}" onclick="window.app.asistenciaManager.toggleDetalle('${detailId}', this)" style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:6px 8px; font-weight:500;">
+                        <span class="toggle-icon" id="icon-${detailId}">▶</span>
+                        ${escapeHtml(item.nombre)}
+                    </td>
+                    <td style="padding:6px 8px; text-align:center;">${item.totalDias}</td>
+                    <td style="padding:6px 8px; text-align:center;">${item.diasFaltados}</td>
+                    <td style="padding:6px 8px; text-align:center; background:rgba(166,227,161,0.05);">${item.leccionesPresente}</td>
+                    <td style="padding:6px 8px; text-align:center; background:rgba(243,139,168,0.05);">${item.leccionesAusente}</td>
+                    <td style="padding:6px 8px; text-align:center; background:rgba(249,226,175,0.05);">${item.leccionesTardia}</td>
+                    <td style="padding:6px 8px; text-align:center; background:rgba(137,180,250,0.05);">${item.leccionesJustificada}</td>
+                    <td style="padding:6px 8px; text-align:center;">${item.leccionesPerdidas}</td>
+                    <td style="padding:6px 8px; text-align:center;">${item.totalLecciones}</td>
+                    <td style="padding:6px 8px; text-align:center; font-weight:bold; color:${color};">${item.porcentajeAsistencia}%</td>
+                    <td style="padding:6px 8px; text-align:center; font-weight:700; color:${notaColor}; background:rgba(249,226,175,0.05);">
+                        ${item.notaPonderada}
+                    </td>
+                </tr>
+                <tr class="tree-detail" id="${detailId}">
+                    <td colspan="11" style="padding:0;">
+                        <div style="padding:8px 16px; background:var(--bg-card-secondary);">
+                            <table style="width:100%; border-collapse:collapse; font-size:12px; background:transparent;">
+                                <thead>
+                                    <tr style="background:var(--bg-hover);">
+                                        <th style="padding:4px 8px; text-align:left;">Fecha</th>
+                                        <th style="padding:4px 8px; text-align:center;">Estado</th>
+                                        <th style="padding:4px 8px; text-align:center;">Lecciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+
+            if (item.detalleDias && item.detalleDias.length > 0) {
+                for (const dia of item.detalleDias) {
+                    const estadoLabel = {
+                        'presente': '✅ Presente',
+                        'ausente': '❌ Ausente',
+                        'tardia': '⏰ Tardía (1 lección)',
+                        'justificada': '📝 Justificada'
+                    }[dia.estado] || dia.estado;
+
+                    const estadoClass = {
+                        'presente': 'estado-presente',
+                        'ausente': 'estado-ausente',
+                        'tardia': 'estado-tardia',
+                        'justificada': 'estado-justificada'
+                    }[dia.estado] || '';
+
+                    // Para tardía, mostrar desglose: 1 tardía + (lec-1) presentes
+                    let leccionesMostrar = dia.lecciones;
+                    let textoAdicional = '';
+                    if (dia.estado === 'tardia') {
+                        leccionesMostrar = `1 tardía + ${dia.lecciones - 1} presentes`;
+                    }
+
+                    html += `
+                        <tr style="border-bottom:1px solid var(--border-color);">
+                            <td style="padding:4px 8px;">${dia.fecha}</td>
+                            <td style="padding:4px 8px; text-align:center;">
+                                <span class="estado-badge ${estadoClass}">${estadoLabel}</span>
+                            </td>
+                            <td style="padding:4px 8px; text-align:center;">${leccionesMostrar}</td>
+                        </tr>
+                    `;
+                }
+            } else {
+                html += `
+                    <tr>
+                        <td colspan="3" style="padding:8px; text-align:center; color:var(--text-muted);">Sin registros detallados</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+                * Tardía equivale a <strong>1 lección perdida</strong>; el resto del día se cuenta como presente.<br>
+                💡 La <strong>Nota</strong> es el porcentaje de asistencia ponderado por el peso asignado (${pesoAsistencia}%).<br>
+                📌 Haz clic en el nombre de un estudiante para expandir/colapsar el detalle por día.
+            </div>
+        `;
+
+        Swal.fire({
+            title: '📊 Informe de Asistencia por Estudiante (basado en lecciones)',
+            html: html,
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar',
+            confirmButtonText: 'Ok',
+            showCloseButton: true,
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            width: '1100px'
+        });
     }
-}
+
     // ------------------------------------------------------------
     // Configuración de porcentaje
     // ------------------------------------------------------------

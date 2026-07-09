@@ -1,11 +1,10 @@
 // ============================================================
-// FinalGradesManager.js - Notas finales (EXCLUYE MACHOTES)
+// FinalGradesManager.js - Notas finales (CON ASISTENCIA REAL)
 // ============================================================
 
 class FinalGradesManager {
     constructor(app) {
         this.app = app;
-        // NOTA: MACHOTES NO ESTÁN INCLUIDOS EN NOTAS FINALES
         this.tipoLabels = {
             cotidiano: 'Cotidianos',
             tarea: 'Tareas',
@@ -58,6 +57,45 @@ class FinalGradesManager {
         this.tiposNotasFinales = ['cotidiano', 'tarea', 'examen', 'proyecto', 'asistencia'];
     }
 
+    // ------------------------------------------------------------
+    // Método auxiliar: calcular porcentaje de asistencia real
+    // ------------------------------------------------------------
+    async calcularAsistenciaEstudiante(studentId) {
+        const seccionId = this.app.currentSectionId;
+        if (!seccionId) return 0;
+
+        // Obtener todos los registros de asistencia de la sección
+        const todos = await this.app.attendance.getAllBySection(seccionId);
+        if (todos.length === 0) return 0;
+
+        // Obtener fechas únicas (total de clases)
+        const fechas = new Set();
+        for (const reg of todos) {
+            fechas.add(reg.fecha);
+        }
+        const totalClases = fechas.size;
+        if (totalClases === 0) return 0;
+
+        // Filtrar registros del estudiante
+        const registrosEst = todos.filter(r => r.estudianteId === studentId);
+        let faltasInjustificadas = 0;
+        let tardias = 0;
+        // Las justificadas no penalizan
+
+        for (const r of registrosEst) {
+            if (r.estado === 'ausente') faltasInjustificadas++;
+            else if (r.estado === 'tardia') tardias++;
+        }
+
+        const faltasEquivalentes = faltasInjustificadas + (tardias * 0.5);
+        const asistidas = Math.max(0, totalClases - faltasEquivalentes);
+        const porcentaje = Math.min(100, Math.round((asistidas / totalClases) * 100));
+        return porcentaje;
+    }
+
+    // ------------------------------------------------------------
+    // Render principal
+    // ------------------------------------------------------------
     async renderFinalGrades(container) {
         const studentsList = this.app.students.list || [];
         const columnasAgrupadas = this.app.grades.getColumnasAgrupadas();
@@ -67,13 +105,15 @@ class FinalGradesManager {
             return;
         }
 
+        // Inicializar estados de expansión
         for (const tipo of this.tiposNotasFinales) {
             if (!(tipo in this.app._gruposExpandidos)) {
                 this.app._gruposExpandidos[tipo] = false;
             }
         }
 
-        const grupos = this.buildGroups(columnasAgrupadas);
+        // Construir grupos (incluyendo asistencia si hay registros)
+        const grupos = await this.buildGroups(columnasAgrupadas);
         const todasLasColumnas = this.flattenColumns(grupos);
         const totalColumnas = todasLasColumnas.length;
 
@@ -85,58 +125,49 @@ class FinalGradesManager {
         let html = this.buildHeaderHTML(grupos, studentsList.length, totalColumnas);
         html += this.buildFilterBarHTML(grupos);
         html += this.buildTableHeaderHTML(grupos, todasLasColumnas);
-        html += this.buildTableBodyHTML(studentsList, todasLasColumnas);
+        html += await this.buildTableBodyHTML(studentsList, todasLasColumnas);
         html += this.buildFooterHTML(grupos);
 
         container.innerHTML = html;
     }
 
-    getEmptyStudentsHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-chart-line"></i>
-                <p>No hay estudiantes registrados para calcular notas finales</p>
-                <button class="btn-action btn-primary" onclick="window.app?.onCategoryClick('estudiantes')">
-                    <i class="fas fa-users"></i> Gestionar Estudiantes
-                </button>
-            </div>`;
-    }
-
-    getEmptyWorksHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-chart-line"></i>
-                <p>No hay trabajos registrados</p>
-            </div>`;
-    }
-
-    buildGroups(columnasAgrupadas) {
+    // ------------------------------------------------------------
+    // Construcción de grupos (AHORA ASINCRÓNICA)
+    // ------------------------------------------------------------
+    async buildGroups(columnasAgrupadas) {
         const grupos = [];
         const tipos = this.tiposNotasFinales;
+
+        // Verificar si hay registros de asistencia en la sección
+        const seccionId = this.app.currentSectionId;
+        let hayAsistencia = false;
+        if (seccionId) {
+            const registros = await this.app.attendance.getAllBySection(seccionId);
+            hayAsistencia = registros.length > 0;
+        }
 
         for (const tipo of tipos) {
             let items = [];
             let esAsistencia = false;
-            
+
             if (tipo === 'asistencia') {
-                const asistenciaData = this.app.attendance?.detailed || {};
-                if (Object.keys(asistenciaData).length > 0) {
+                if (hayAsistencia) {
                     esAsistencia = true;
                     items = [{ id: 'asistencia', nombre: 'Asistencia', puntosMax: 100, esAsistencia: true }];
                 }
             } else {
                 items = columnasAgrupadas[tipo] || [];
             }
-            
+
             if (items.length === 0) continue;
-            
+
             const expandido = this.app._gruposExpandidos[tipo] || false;
             const estaSeleccionado = this.app._categoriaSeleccionada === tipo;
             const color = estaSeleccionado ? this.tipoColores[tipo] : 'var(--text-muted)';
             const colorBg = estaSeleccionado ? this.tipoColoresBgFluorescente[tipo] : this.tipoColoresBgApagado[tipo];
             const colorBgHover = this.tipoColoresBgHover[tipo] || 'var(--bg-active)';
             const bordeColor = estaSeleccionado ? this.tipoColoresBorde[tipo] : 'transparent';
-            
+
             grupos.push({
                 tipo: tipo,
                 label: this.tipoLabels[tipo] || tipo,
@@ -198,6 +229,28 @@ class FinalGradesManager {
             }
         }
         return todas;
+    }
+
+    // ------------------------------------------------------------
+    // Métodos auxiliares para HTML (sin cambios importantes)
+    // ------------------------------------------------------------
+    getEmptyStudentsHTML() {
+        return `
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <p>No hay estudiantes registrados para calcular notas finales</p>
+                <button class="btn-action btn-primary" onclick="window.app?.onCategoryClick('estudiantes')">
+                    <i class="fas fa-users"></i> Gestionar Estudiantes
+                </button>
+            </div>`;
+    }
+
+    getEmptyWorksHTML() {
+        return `
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <p>No hay trabajos registrados</p>
+            </div>`;
     }
 
     buildHeaderHTML(grupos, estudiantesCount, totalColumnas) {
@@ -331,7 +384,10 @@ class FinalGradesManager {
         return html;
     }
 
-    buildTableBodyHTML(studentsList, todasLasColumnas) {
+    // ------------------------------------------------------------
+    // Cuerpo de la tabla (AHORA ASINCRÓNICO y con corrección de student)
+    // ------------------------------------------------------------
+    async buildTableBodyHTML(studentsList, todasLasColumnas) {
         let html = '';
         for (let i = 0; i < studentsList.length; i++) {
             const student = studentsList[i];
@@ -355,11 +411,12 @@ class FinalGradesManager {
                     let tieneNota = false;
                     
                     if (col.esAsistencia) {
-                        const asistenciaData = this.app.attendance?.getStudentData?.(student.id) || { ausencias: 0, justificadas: 0, injustificadas: 0, tardias: 0 };
-                        const faltasEquivalentes = (asistenciaData.injustificadas || 0) + ((asistenciaData.tardias || 0) * 0.5);
-                        const porcentajeAsistencia = Math.max(0, 100 - (faltasEquivalentes * 10));
-                        sumaGrupo = Math.min(100, porcentajeAsistencia);
-                        tieneNota = true;
+                        // Asistencia: calcular porcentaje real
+                        const porcentajeAsistencia = await this.calcularAsistenciaEstudiante(student.id);
+                        if (porcentajeAsistencia !== null) {
+                            sumaGrupo = porcentajeAsistencia;
+                            tieneNota = true;
+                        }
                     } else {
                         for (const item of col.items) {
                             const nota = this.app.grades.getGrade(student.id, item.id, col.tipo);
@@ -383,11 +440,12 @@ class FinalGradesManager {
                     let notaStr = '';
                     
                     if (col.esAsistencia) {
-                        const asistenciaData = this.app.attendance?.getStudentData?.(student.id) || { ausencias: 0, justificadas: 0, injustificadas: 0, tardias: 0 };
-                        const faltasEquivalentes = (asistenciaData.injustificadas || 0) + ((asistenciaData.tardias || 0) * 0.5);
-                        const porcentajeAsistencia = Math.max(0, 100 - (faltasEquivalentes * 10));
-                        nota = Math.min(100, porcentajeAsistencia);
-                        notaStr = nota !== null && !isNaN(nota) ? nota : '';
+                        // Asistencia: calcular porcentaje real
+                        const porcentajeAsistencia = await this.calcularAsistenciaEstudiante(student.id);
+                        if (porcentajeAsistencia !== null) {
+                            nota = porcentajeAsistencia;
+                            notaStr = nota !== null && !isNaN(nota) ? nota : '';
+                        }
                     } else {
                         nota = this.app.grades.getGrade(student.id, col.id, col.tipo);
                         notaStr = nota !== null && !isNaN(nota) ? nota : '';
@@ -443,6 +501,9 @@ class FinalGradesManager {
         return html;
     }
 
+    // ------------------------------------------------------------
+    // Footer y demás métodos (sin cambios relevantes)
+    // ------------------------------------------------------------
     buildFooterHTML(grupos) {
         const tipoLabels = this.tipoLabels;
         return `
@@ -495,6 +556,7 @@ class FinalGradesManager {
     }
 
     mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega) {
+        // (Método sin cambios, solo por completitud)
         const tipoLabel = {
             cotidiano: 'Trabajo Cotidiano',
             tarea: 'Tarea',

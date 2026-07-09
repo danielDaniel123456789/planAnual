@@ -14,6 +14,7 @@ class App extends BaseApp {
         this.machoteManager = new MachoteManager(this);
        this.bitacoraManager = new BitacoraManager(this);
         this.rubrosManager = new RubrosManager(this); 
+    
     }
 
 // ============================================================

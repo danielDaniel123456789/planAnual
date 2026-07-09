@@ -5,6 +5,71 @@
 // Verificar si BaseApp ya está definida para evitar duplicados
 if (typeof BaseApp === 'undefined') {
 
+// *** PROTECCIÓN: si Attendance no está definida, crear una dummy ***
+if (typeof Attendance === 'undefined') {
+    console.warn('⚠️ Attendance no está definida. Creando implementación dummy para evitar errores.');
+    window.Attendance = class Attendance {
+        constructor(db) {
+            this.db = db;
+            this.data = {};
+            this.detailed = {};
+            this.currentSectionId = null;
+        }
+        async load(sectionId) {
+            console.warn('⚠️ [Attendance dummy] load', sectionId);
+            this.currentSectionId = sectionId;
+            return {};
+        }
+        async saveDetailed(sectionId, studentId, data) {
+            console.warn('⚠️ [Attendance dummy] saveDetailed', sectionId, studentId, data);
+            return;
+        }
+        async getStudentData(studentId) {
+            return { ausencias: 0, justificadas: 0, injustificadas: 0, tardias: 0 };
+        }
+        async calculatePercentage(studentId) {
+            return 0;
+        }
+        async markAllPresent(seccionId, fecha, lecciones) {
+            console.warn('⚠️ [Attendance dummy] markAllPresent');
+            return;
+        }
+        async getPorcentajeAsignado(sectionId) {
+            return 10;
+        }
+        async getTotalClases(sectionId) {
+            return 0;
+        }
+        async cambiarEstado(seccionId, fecha, estudianteId, nuevoEstado, lecciones) {
+            console.warn('⚠️ [Attendance dummy] cambiarEstado');
+            return;
+        }
+        async calcularPorcentajeAsistencia(seccionId, estudianteId, configuracion) {
+            return 100;
+        }
+        async saveDaily(sectionId, fecha, studentId, estado) {
+            console.warn('⚠️ [Attendance dummy] saveDaily');
+            return;
+        }
+        async getDaily(sectionId, fecha) {
+            return {};
+        }
+        async getAllBySection(sectionId) {
+            return [];
+        }
+        async getDates(sectionId) {
+            return [];
+        }
+        async getStudentHistory(sectionId, studentId) {
+            return [];
+        }
+        async deleteDaily(sectionId, fecha, studentId) {
+            console.warn('⚠️ [Attendance dummy] deleteDaily');
+            return;
+        }
+    };
+}
+
 class BaseApp {
     constructor() {
         this.db = db;
@@ -24,13 +89,52 @@ class BaseApp {
         this._seleccionGrupal = {};
         this.sidebarView = new Sidebar(this);
         this.workItemsView = new WorkItems(this);
-        // Los managers se inicializan en la clase hija (App)
+
+        // *** Instancia de Attendance (se creará bajo demanda) ***
+        this._attendance = null;
+
+        // Managers (se inicializan en la clase hija)
         this.studentManager = null;
         this.planManager = null;
         this.finalGradesManager = null;
         this.machoteManager = null;
         this.bitacoraManager = null;
         this.rubrosManager = null;
+        // AsistenciaManager necesita this.app.attendance
+        this.asistenciaManager = new AsistenciaManager(this);
+    }
+
+    // *** GETTER LAZY con protección ***
+    get attendance() {
+        if (!this._attendance) {
+            // Attendance ya debería estar definida (por la dummy o por el script real)
+            try {
+                this._attendance = new Attendance(this.db);
+                console.log('✅ Attendance instanciado correctamente');
+            } catch (e) {
+                console.error('❌ Error al instanciar Attendance:', e);
+                // Fallback extremo: crear un objeto con métodos vacíos
+                this._attendance = {
+                    load: async () => {},
+                    saveDetailed: async () => {},
+                    getStudentData: async () => ({ ausencias: 0, justificadas: 0, injustificadas: 0, tardias: 0 }),
+                    calculatePercentage: async () => 0,
+                    markAllPresent: async () => {},
+                    getPorcentajeAsignado: async () => 10,
+                    getTotalClases: async () => 0,
+                    cambiarEstado: async () => {},
+                    calcularPorcentajeAsistencia: async () => 100,
+                    saveDaily: async () => {},
+                    getDaily: async () => ({}),
+                    getAllBySection: async () => [],
+                    getDates: async () => [],
+                    getStudentHistory: async () => [],
+                    deleteDaily: async () => {}
+                };
+                console.warn('⚠️ Se usará un objeto dummy para Attendance');
+            }
+        }
+        return this._attendance;
     }
 
     async init() {
@@ -38,6 +142,12 @@ class BaseApp {
         await this.db.init();
         this.config.load();
         this.applyTheme();
+        // Forzar la creación de attendance (para asegurar que esté disponible)
+        try {
+            this.attendance; // llama al getter
+        } catch(e) {
+            console.warn('⚠️ Attendance no disponible al iniciar:', e);
+        }
         await this.loadData();
         this.setupEvents();
         await this.render();
@@ -62,6 +172,8 @@ class BaseApp {
         await this.students.load(sectionId);
         await this.grades.loadWorks(sectionId);
         await this.plan.load(sectionId);
+        // Usamos el getter attendance (ya sea real o dummy)
+        await this.attendance.load(sectionId);
     }
 
     setupEvents() {
@@ -80,12 +192,8 @@ class BaseApp {
     async render() {
         this.sidebarView.render(this.sections.list, this.currentSectionId);
 
-        // ✅ Obtener la sección actual UNA SOLA VEZ
         const current = this.sections.getCurrent();
 
-        // ============================================================
-        // 1. ACTUALIZAR EL NOMBRE DE LA SECCIÓN
-        // ============================================================
         const sectionNameSpan = document.getElementById('currentSectionName');
         if (sectionNameSpan) {
             if (current) {
@@ -95,9 +203,6 @@ class BaseApp {
             }
         }
 
-        // ============================================================
-        // 2. ACTUALIZAR EL SPAN DE BOTONES (editarSeccionBtn)
-        // ============================================================
         const editarBtnContainer = document.getElementById('editarSeccionBtn');
         if (editarBtnContainer) {
             if (current) {
@@ -118,13 +223,10 @@ class BaseApp {
                     </button>
                 `;
             } else {
-                editarBtnContainer.innerHTML = ''; // vacío si no hay sección
+                editarBtnContainer.innerHTML = '';
             }
         }
 
-        // ============================================================
-        // 3. LIMPIAR .header-actions (ya no lo usamos)
-        // ============================================================
         const headerActions = document.querySelector('.header-actions');
         if (headerActions) {
             headerActions.innerHTML = '';
@@ -141,6 +243,15 @@ class BaseApp {
         const container = document.getElementById('mainContent');
         if (!this.currentSectionId) {
             container.innerHTML = this.getEmptySectionHTML();
+            return;
+        }
+
+        if (this.currentCategory === 'asistencia') {
+            if (this.asistenciaManager && typeof this.asistenciaManager.renderAsistencia === 'function') {
+                await this.asistenciaManager.renderAsistencia(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Asistencia no disponible</p></div>`;
+            }
             return;
         }
 
@@ -195,7 +306,6 @@ class BaseApp {
         }
 
         if (this.currentCategory === 'rubro') {
-            // Usar el método de la app o fallback
             if (typeof this.renderRubros === 'function') {
                 await this.renderRubros(container);
             } else {
@@ -204,12 +314,11 @@ class BaseApp {
             return;
         }
 
-        // Cualquier otra categoría (cotidiano, tarea, examen, proyecto, asistencia)
         await this.workItemsView.render(container, this.currentCategory);
     }
 
     // ============================================================
-    // MENÚ DE SECCIÓN (⋮)
+    // MENÚ DE SECCIÓN
     // ============================================================
     async showSectionMenu() {
         const result = await Swal.fire({
@@ -254,7 +363,7 @@ class BaseApp {
     }
 
     // ============================================================
-    // ELIMINAR SECCIÓN COMPLETA (con todos sus datos)
+    // ELIMINAR SECCIÓN COMPLETA
     // ============================================================
     async eliminarSeccion() {
         const current = this.sections.getCurrent();
@@ -264,7 +373,7 @@ class BaseApp {
         }
 
         const confirm = await this.ui.showConfirm(
-            `¿Eliminar la sección "${current.nombre}"? Se perderán TODOS los datos asociados (estudiantes, calificaciones, trabajos, plan, bitácora, asistencia, etc.).`
+            `¿Eliminar la sección "${current.nombre}"? Se perderán TODOS los datos asociados.`
         );
 
         if (!confirm.isConfirmed) return;
@@ -272,7 +381,6 @@ class BaseApp {
         const sectionId = current.id;
 
         try {
-            // Función auxiliar para eliminar todos los registros de un store que coincidan con seccionId
             const deleteBySection = async (storeName, keyName = 'seccionId') => {
                 const all = await this.db.getAll(storeName);
                 for (const item of all) {
@@ -285,10 +393,8 @@ class BaseApp {
                 }
             };
 
-            // 1. Eliminar estudiantes
             await deleteBySection(STORES.ESTUDIANTES);
 
-            // 2. Eliminar trabajos de todos los tipos
             const tiposTrabajo = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
             const storeMap = {
                 cotidiano: STORES.TRABAJOS_COTIDIANO,
@@ -301,23 +407,15 @@ class BaseApp {
                 await deleteBySection(storeMap[tipo]);
             }
 
-            // 3. Eliminar plan (enlaces y contenido)
             await deleteBySection(STORES.PLAN_ENLACES);
             await deleteBySection(STORES.PLAN_CONTENIDO);
-
-            // 4. Eliminar bitácora
             await deleteBySection(STORES.BITACORA);
-
-            // 5. Eliminar asistencia diaria y detallada
             await deleteBySection(STORES.ASISTENCIA);
             await deleteBySection(STORES.ASISTENCIA_DETALLADA, 'seccionId');
-
-            // 6. Eliminar configuraciones (porcentajes, horarios, evaluaciones)
             await deleteBySection(STORES.PORCENTAJES, 'seccionId');
             await deleteBySection(STORES.HORARIOS, 'seccionId');
             await deleteBySection(STORES.EVALUACIONES, 'seccionId');
 
-            // 7. Eliminar calificaciones (clave compuesta)
             const allCalif = await this.db.getAll(STORES.CALIFICACIONES);
             for (const calif of allCalif) {
                 if (calif.seccionId === sectionId) {
@@ -330,10 +428,7 @@ class BaseApp {
                 }
             }
 
-            // 8. Finalmente eliminar la sección
             await this.sections.delete(sectionId);
-
-            // 9. Recargar datos y actualizar interfaz
             await this.sections.load();
 
             if (this.sections.list.length === 0) {
@@ -354,7 +449,7 @@ class BaseApp {
     }
 
     // ============================================================
-    // FALLBACK PARA RUBROS (si no está definido en la app)
+    // FALLBACK PARA RUBROS
     // ============================================================
     async renderRubrosFallback(container) {
         console.log('📊 Usando renderRubrosFallback');

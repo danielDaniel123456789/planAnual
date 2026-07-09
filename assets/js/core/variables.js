@@ -1,5 +1,5 @@
- const DB_NAME = 'SistemaCalificacionesV42DB';  // Cambiar de V41 a V42
-const DB_VERSION = 42;  // Cambiar de 41 a 42
+const DB_NAME = 'SistemaCalificacionesV48DB';
+const DB_VERSION = 48;  // sube la versión
 
 const STORES = {
     SECCIONES: 'secciones',
@@ -15,11 +15,11 @@ const STORES = {
     HORARIOS: 'horarios',
     EVALUACIONES: 'evaluaciones',
     LINKS: 'links',
-    ASISTENCIA: 'asistencia',
     PORCENTAJES: 'porcentajes',
     ASISTENCIA_DETALLADA: 'asistencia_detallada',
     PLAN_ENLACES: 'plan_enlaces',
-    PLAN_CONTENIDO: 'plan_contenido'
+    PLAN_CONTENIDO: 'plan_contenido',
+    ASISTENCIA: 'asistencia'
 };
 
         const TIPOS_TRABAJO = {
@@ -34,6 +34,7 @@ const STORES = {
 // ============================================================
 
 const CATEGORIAS_MENU = [
+     { id: 'asistencia', nombre: 'Asistencia', icono: 'fas fa-calendar-check', color: '#cba6f7' },
     { id: 'estudiantes', nombre: 'Estudiantes', icono: 'fas fa-users', color: '#89b4fa' },
     { id: 'bitacora', nombre: 'Bitácora', icono: 'fas fa-book', color: '#f38ba8' },
     { id: 'plan', nombre: 'Plan', icono: 'fas fa-calendar-alt', color: '#94e2d5' },
@@ -41,7 +42,6 @@ const CATEGORIAS_MENU = [
     { id: 'tarea', nombre: 'Tareas', icono: 'fas fa-tasks', color: '#a6e3a1' },
     { id: 'examen', nombre: 'Exámenes', icono: 'fas fa-file-alt', color: '#f9e2af' },
     { id: 'proyecto', nombre: 'Proyectos', icono: 'fas fa-rocket', color: '#fab387' },
-    { id: 'asistencia', nombre: 'Asistencia', icono: 'fas fa-calendar-check', color: '#cba6f7' },
     { id: 'bitacora', nombre: 'Bitácora', icono: 'fas fa-book', color: '#f38ba8' },
     { id: 'notas_finales', nombre: 'Notas Finales', icono: 'fas fa-chart-line', color: '#f9e2af' },
     { id: 'rubro', nombre: 'Rubros', icono: 'fas fa-percent', color: '#f9e2af' }  // NUEVO

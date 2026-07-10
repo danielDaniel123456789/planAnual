@@ -60,63 +60,88 @@ class FinalGradesManager {
     // ------------------------------------------------------------
     // Método auxiliar: calcular porcentaje de asistencia real
     // ------------------------------------------------------------
+// ------------------------------------------------------------
+// Calcular asistencia del estudiante (misma lógica que en AsistenciaManager)
+// ------------------------------------------------------------
 async calcularAsistenciaEstudiante(studentId) {
     const seccionId = this.app.currentSectionId;
     if (!seccionId) return 0;
 
-    const todos = await this.app.attendance.getAllBySection(seccionId);
-    if (todos.length === 0) return 100;
-
-    // 1. Total de lecciones por día (último registro)
-    const leccionesPorDia = new Map();
-    for (const reg of todos) {
-        let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
-        if (fecha && fecha.includes('/')) {
-            const partes = fecha.split('/');
-            fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-        }
-        const lec = reg.lecciones || 6;
-        const ts = reg.timestamp || reg.fecha;
-        if (!leccionesPorDia.has(fecha) || ts > leccionesPorDia.get(fecha).timestamp) {
-            leccionesPorDia.set(fecha, { lecciones: lec, timestamp: ts });
-        }
+    // Obtener todos los registros de asistencia de la sección
+    let todos = [];
+    try {
+        todos = await this.app.db.getByIndex(STORES.ASISTENCIA, 'seccionId', seccionId);
+    } catch (e) {
+        console.warn('Error obteniendo registros de asistencia:', e);
+        return 0;
     }
-    let totalLecciones = 0;
-    for (const entry of leccionesPorDia.values()) {
-        totalLecciones += entry.lecciones;
-    }
-    if (totalLecciones === 0) return 100;
 
-    // 2. Lecciones perdidas del estudiante (último registro por día)
+    if (!todos || todos.length === 0) {
+        // Sin registros → 100% de asistencia (puedes cambiarlo a 0 si prefieres)
+        return 100;
+    }
+
+    // Obtener parámetros de asistencia desde AsistenciaManager (o cargarlos directamente)
+    const asistenciaManager = this.app.asistenciaManager;
+    if (!asistenciaManager) {
+        // Si no existe, usar valores por defecto
+        const maxAusencias = 3;
+        const tardiasPorAusencia = 2;
+        const leccionesPorDefecto = 1;
+        return await this._calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPorAusencia, leccionesPorDefecto);
+    }
+
+    // Cargar configuración si no está cargada
+    await asistenciaManager.cargarPorcentaje();
+    const maxAusencias = asistenciaManager.maxAusencias;
+    const tardiasPorAusencia = asistenciaManager.tardiasPorAusencia;
+    const leccionesPorDefecto = asistenciaManager.leccionesPorDefecto;
+
+    return await this._calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPorAusencia, leccionesPorDefecto);
+}
+
+// ------------------------------------------------------------
+// Método auxiliar para el cálculo (evita duplicar código)
+// ------------------------------------------------------------
+async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPorAusencia, leccionesPorDefecto) {
     const estudianteIdNum = Number(studentId);
     const registrosEst = todos.filter(r => Number(r.estudianteId) === estudianteIdNum);
-    let leccionesPerdidas = 0;
-    if (registrosEst.length > 0) {
-        const registrosPorDia = new Map();
-        for (const reg of registrosEst) {
-            let fecha = reg.timestamp ? reg.timestamp.split('T')[0] : reg.fecha;
-            if (fecha && fecha.includes('/')) {
-                const partes = fecha.split('/');
-                fecha = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-            }
-            const ts = reg.timestamp || reg.fecha;
-            if (!registrosPorDia.has(fecha) || ts > registrosPorDia.get(fecha).timestamp) {
-                registrosPorDia.set(fecha, reg);
-            }
-        }
-        for (const [fecha, reg] of registrosPorDia) {
-            const lec = reg.lecciones || 6;
-            if (reg.estado === 'ausente') {
-                leccionesPerdidas += lec;
-            } else if (reg.estado === 'tardia') {
-                leccionesPerdidas += lec * 0.5; // o 1? En el informe se usa 1, aquí se usa 0.5.
-            }
+
+    let leccionesPresente = 0;
+    let leccionesAusente = 0;
+    let leccionesTardia = 0;
+    let leccionesJustificada = 0;
+    let totalLeccionesEst = 0;
+
+    for (const reg of registrosEst) {
+        const lec = reg.lecciones || leccionesPorDefecto;
+        totalLeccionesEst += lec;
+        switch (reg.estado) {
+            case 'presente': leccionesPresente += lec; break;
+            case 'ausente': leccionesAusente += lec; break;
+            case 'tardia': leccionesTardia += lec; break;
+            case 'justificada': leccionesJustificada += lec; break;
         }
     }
 
-    const asistidas = Math.max(0, totalLecciones - leccionesPerdidas);
-    const porcentaje = Math.min(100, Math.round((asistidas / totalLecciones) * 100));
-    return porcentaje;
+    if (registrosEst.length === 0 || totalLeccionesEst === 0) {
+        return 100; // Si no hay registros o total 0, consideramos 100%
+    }
+
+    const leccionesPerdidas = leccionesAusente + (leccionesTardia / tardiasPorAusencia);
+    const maxLeccionesPermitidas = maxAusencias * leccionesPorDefecto;
+
+    let porcentajeAsistencia = 100;
+    if (totalLeccionesEst > 0) {
+        if (leccionesPerdidas >= maxLeccionesPermitidas) {
+            porcentajeAsistencia = 0;
+        } else {
+            porcentajeAsistencia = 100 * (1 - leccionesPerdidas / maxLeccionesPermitidas);
+        }
+    }
+    porcentajeAsistencia = Math.round(porcentajeAsistencia * 10) / 10;
+
+    return porcentajeAsistencia;
 }
 
     // ------------------------------------------------------------

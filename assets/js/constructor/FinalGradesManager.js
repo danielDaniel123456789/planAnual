@@ -328,6 +328,11 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                     <button class="btn-action btn-success" onclick="window.app?.exportarExcel()">
                         <i class="fas fa-file-excel"></i> Exportar Excel
                     </button>
+
+                 
+<button class="btn-action btn-info" onclick="descargarPDFEstudiante()">
+    <i class="fas fa-file-pdf"></i> PDF por Estudiante
+</button>
                 </div>
             </div>`;
     }
@@ -465,6 +470,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                    if (col.esAsistencia) {
     // Calcular el porcentaje de asistencia (0-100)
     const porcentajeAsistencia = await this.calcularAsistenciaEstudiante(student.id);
+    
     // Obtener el porcentaje asignado a asistencia (ej. 10)
     const porcentajeAsignado = this.app.grades.percentages?.asistencia?.porcentaje || 10;
     // Calcular el valor ponderado (ej. 50% * 10% = 5%)

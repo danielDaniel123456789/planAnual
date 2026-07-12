@@ -65,17 +65,13 @@
     <div class="app-container">
         <!-- Activity Bar -->
         <div class="activity-bar" id="activityBar">
-            <div class="activity-item active" data-view="sections" title="Secciones" onclick="descargarDataBase()">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <!-- Dentro de la activity bar, después del primer item -->
-<div class="activity-item" data-view="importar" title="Importar base de datos" onclick="importarBaseDeDatos()">
-    <i class="fas fa-cloud-upload-alt"></i>
+
+            <div class="activity-item" title="Opciones de base de datos" onclick="mostrarOpcionesBaseDatos()">
+    <i class="fas fa-cog"></i> <!-- o fa-ellipsis-v, etc -->
 </div>
-<!-- Dentro de la activity bar, después del botón de importar o al final -->
-<div class="activity-item" data-view="eliminar" title="Eliminar todos los datos" onclick="eliminarBaseDatos()">
-    <i class="fas fa-trash-alt" style="color:#f38ba8;"></i>
-</div>
+           
+
+
             <div class="activity-item btn-add-rapido" id="btnAddRapido" title="Agregar rápido">
                 <i class="fas fa-plus"></i>
             </div>

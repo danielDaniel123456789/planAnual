@@ -668,3 +668,28 @@
             position: absolute;
             right: 20px !important;
         }
+
+        .swal2-button-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+    text-align: center;
+}
+
+.swal2-button-option:hover {
+    background: var(--bg-active);
+    transform: scale(1.02);
+}
+
+.swal2-button-option i {
+    width: 24px;
+}

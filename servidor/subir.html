@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba de endpoints</title>
+    <style>/* (mismo estilo que antes) */</style>
+</head>
+<body>
+    <h1>🧪 Prueba de subida al servidor</h1>
+
+    <!-- GET -->
+    <div class="card">
+        <h2>🔍 GET – Consultar correo</h2>
+        <input type="email" id="get-correo" value="test@ejemplo.com">
+        <button onclick="consultarCorreo()">Consultar</button>
+        <button onclick="limpiar('get-respuesta')">Limpiar</button>
+        <div id="get-respuesta" class="respuesta">Esperando consulta...</div>
+    </div>
+
+    <!-- POST -->
+    <div class="card">
+        <h2>📤 POST – Actualizar respaldo</h2>
+        <input type="email" id="post-correo" value="test@ejemplo.com">
+        <textarea id="post-json">{"prueba":"post"}</textarea>
+        <button onclick="subirPost()">Subir</button>
+        <button onclick="limpiar('post-respuesta')">Limpiar</button>
+        <div id="post-respuesta" class="respuesta">Esperando acción...</div>
+    </div>
+
+    <script>
+        const BASE = 'https://educr.app/databaseJSON/';
+        const API_KEY = 'miClaveSuperSecreta123';
+
+        async function consultarCorreo() {
+            const correo = document.getElementById('get-correo').value.trim();
+            const cont = document.getElementById('get-respuesta');
+            if (!correo) { cont.className = 'respuesta error'; cont.textContent = '❌ Ingresa un correo.'; return; }
+
+            const url = `${BASE}consultar.php?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
+            cont.className = 'respuesta';
+            cont.textContent = '⏳ Consultando...';
+
+            try {
+                const res = await fetch(url);
+                const texto = await res.text();
+                let json;
+                try { json = JSON.parse(texto); } catch { json = { raw: texto }; }
+
+                cont.className = res.ok ? 'respuesta success' : 'respuesta error';
+                cont.textContent = `🔍 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
+            } catch (e) {
+                cont.className = 'respuesta error';
+                cont.textContent = `❌ Error de conexión: ${e.message}\n\nPosibles causas:\n- CORS bloqueado (usa Live Server)\n- URL incorrecta\n- El servidor no responde`;
+                console.error('Fetch error:', e);
+            }
+        }
+
+        async function subirPost() {
+            const correo = document.getElementById('post-correo').value.trim();
+            const jsonRaw = document.getElementById('post-json').value.trim();
+            const cont = document.getElementById('post-respuesta');
+
+            if (!correo) { cont.className = 'respuesta error'; cont.textContent = '❌ Correo obligatorio.'; return; }
+            if (!jsonRaw) { cont.className = 'respuesta error'; cont.textContent = '❌ JSON vacío.'; return; }
+
+            cont.className = 'respuesta';
+            cont.textContent = '⏳ Enviando...';
+
+            try {
+                const form = new URLSearchParams();
+                form.append('api_key', API_KEY);
+                form.append('correo', correo);
+                form.append('json', jsonRaw);
+                form.append('version', '1.0');
+
+                const res = await fetch(`${BASE}insert.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: form
+                });
+
+                const texto = await res.text();
+                let json;
+                try { json = JSON.parse(texto); } catch { json = { raw: texto }; }
+
+                cont.className = res.ok ? 'respuesta success' : 'respuesta error';
+                cont.textContent = `📤 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
+            } catch (e) {
+                cont.className = 'respuesta error';
+                cont.textContent = `❌ Error de conexión: ${e.message}\n\nPosibles causas:\n- CORS bloqueado\n- URL incorrecta\n- El servidor no responde`;
+                console.error('Fetch error:', e);
+            }
+        }
+
+        function limpiar(id) {
+            const el = document.getElementById(id);
+            el.className = 'respuesta';
+            el.textContent = 'Esperando acción...';
+        }
+    </script>
+</body>
+</html>

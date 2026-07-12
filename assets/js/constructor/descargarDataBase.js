@@ -1,6 +1,3 @@
-// ============================================================
-// descargarDataBase.js - Exportar toda la base de datos como JSON
-// ============================================================
 
 async function descargarDataBase() {
     try {
@@ -70,3 +67,4 @@ async function descargarDataBase() {
         Swal.fire('Error', 'No se pudo exportar la base de datos: ' + error.message, 'error');
     }
 }
+

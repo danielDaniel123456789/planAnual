@@ -29,6 +29,7 @@ async editarRubro(id) { await this.rubrosManager.editRubro(id); }
     // DELEGACIÓN DE MÉTODOS - StudentManager
     // ============================================================
     async addStudent() { await this.studentManager.addStudent(); }
+     async editStudent(id) { await this.studentManager.editStudent(id); }  
     async deleteStudent(id) { await this.studentManager.deleteStudent(id); }
     async importStudents() { await this.studentManager.importStudents(); }
 

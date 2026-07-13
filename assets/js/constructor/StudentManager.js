@@ -1,5 +1,5 @@
 // ============================================================
-// StudentManager.js - Gestión de estudiantes
+// StudentManager.js - Gestión de estudiantes (con edición)
 // ============================================================
 
 class StudentManager {
@@ -7,6 +7,9 @@ class StudentManager {
         this.app = app;
     }
 
+    // ------------------------------------------------------------
+    // Renderizado de la tabla de estudiantes
+    // ------------------------------------------------------------
     async renderStudents(container) {
         const studentsList = this.app.students.list || [];
         let html = `
@@ -32,20 +35,40 @@ class StudentManager {
         html += `
             <div style="overflow-x:auto; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border-color);">
                 <table class="data-table">
-                    <thead><tr><th>#</th><th>Cédula</th><th>Nombre</th><th>Apellidos</th><th>Correo</th><th style="text-align:center;">Acciones</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Cédula</th>
+                            <th>Nombre</th>
+                            <th>Apellidos</th>
+                            <th>Correo</th>
+                            <th style="text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
                     <tbody>`;
         
         for (let i = 0; i < studentsList.length; i++) {
             const student = studentsList[i];
             html += `
                 <tr>
-                    <td>${i+1}</td>
+                    <td>${i + 1}</td>
                     <td>${escapeHtml(student.cedula || '-')}</td>
                     <td style="font-weight:500; color:var(--text-primary);">${escapeHtml(student.nombre || '-')}</td>
                     <td>${escapeHtml(student.apellidos || '-')}</td>
                     <td>${escapeHtml(student.correo || '-')}</td>
-                    <td style="text-align:center;">
-                        <button class="btn-action btn-danger" onclick="window.app?.deleteStudent(${student.id})" style="padding:4px 8px; font-size:12px;">
+                    <td style="text-align:center; white-space:nowrap;">
+                        <!-- Botón Editar -->
+                        <button class="btn-action btn-primary" 
+                                onclick="window.app?.editStudent(${student.id})" 
+                                style="padding:4px 8px; font-size:12px; margin-right:4px;" 
+                                title="Editar estudiante">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <!-- Botón Eliminar -->
+                        <button class="btn-action btn-danger" 
+                                onclick="window.app?.deleteStudent(${student.id})" 
+                                style="padding:4px 8px; font-size:12px;" 
+                                title="Eliminar estudiante">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -55,6 +78,9 @@ class StudentManager {
         container.innerHTML = html;
     }
 
+    // ------------------------------------------------------------
+    // Agregar estudiante (nuevo)
+    // ------------------------------------------------------------
     async addStudent() {
         const result = await Swal.fire({
             title: 'Agregar Estudiante',
@@ -75,11 +101,14 @@ class StudentManager {
             background: 'var(--bg-card)',
             color: 'var(--text-primary)',
             preConfirm: () => {
-                const cedula = document.getElementById('swal-cedula').value;
-                const nombre = document.getElementById('swal-nombre').value;
-                const apellidos = document.getElementById('swal-apellidos').value;
-                const correo = document.getElementById('swal-correo').value;
-                if (!nombre) { Swal.showValidationMessage('El nombre es obligatorio'); return; }
+                const cedula = document.getElementById('swal-cedula').value.trim();
+                const nombre = document.getElementById('swal-nombre').value.trim();
+                const apellidos = document.getElementById('swal-apellidos').value.trim();
+                const correo = document.getElementById('swal-correo').value.trim();
+                if (!nombre) {
+                    Swal.showValidationMessage('El nombre es obligatorio');
+                    return;
+                }
                 return { cedula, nombre, apellidos, correo };
             }
         });
@@ -90,6 +119,66 @@ class StudentManager {
         }
     }
 
+    // ------------------------------------------------------------
+    // Editar estudiante (NUEVO)
+    // ------------------------------------------------------------
+    async editStudent(id) {
+        const student = this.app.students.getById(id);
+        if (!student) {
+            this.app.ui.showError('Estudiante no encontrado');
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: '✏️ Editar Estudiante',
+            html: `
+                <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                    <label style="font-size:13px; color:var(--text-secondary);">Cédula</label>
+                    <input id="swal-cedula" class="swal2-input" value="${escapeHtml(student.cedula || '')}" placeholder="Ej. 1-1234-5678">
+                    <label style="font-size:13px; color:var(--text-secondary);">Nombre</label>
+                    <input id="swal-nombre" class="swal2-input" value="${escapeHtml(student.nombre || '')}" placeholder="Nombre del estudiante">
+                    <label style="font-size:13px; color:var(--text-secondary);">Apellidos</label>
+                    <input id="swal-apellidos" class="swal2-input" value="${escapeHtml(student.apellidos || '')}" placeholder="Apellidos">
+                    <label style="font-size:13px; color:var(--text-secondary);">Correo</label>
+                    <input id="swal-correo" class="swal2-input" value="${escapeHtml(student.correo || '')}" placeholder="correo@ejemplo.com" type="email">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '💾 Guardar',
+            cancelButtonText: 'Cancelar',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            width: '480px',
+            preConfirm: () => {
+                const cedula = document.getElementById('swal-cedula').value.trim();
+                const nombre = document.getElementById('swal-nombre').value.trim();
+                const apellidos = document.getElementById('swal-apellidos').value.trim();
+                const correo = document.getElementById('swal-correo').value.trim();
+                if (!nombre) {
+                    Swal.showValidationMessage('El nombre es obligatorio');
+                    return;
+                }
+                // Validación básica de correo (si se proporciona)
+                if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                    Swal.showValidationMessage('El correo electrónico no es válido');
+                    return;
+                }
+                return { cedula, nombre, apellidos, correo };
+            }
+        });
+
+        if (result.isConfirmed && result.value) {
+            // Actualizar en la base de datos
+            await this.app.students.updateStudent(id, result.value);
+            // Refrescar la vista
+            await this.app.render();
+            this.app.ui.showSuccess('✅ Estudiante actualizado correctamente');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Eliminar estudiante
+    // ------------------------------------------------------------
     async deleteStudent(id) {
         const student = this.app.students.getById(id);
         if (!student) return;
@@ -102,6 +191,9 @@ class StudentManager {
         }
     }
 
+    // ------------------------------------------------------------
+    // Importar estudiantes desde texto (CSV)
+    // ------------------------------------------------------------
     async importStudents() {
         const result = await this.app.ui.showTextarea(
             'Importar Estudiantes',

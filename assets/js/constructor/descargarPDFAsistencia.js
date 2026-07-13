@@ -1,7 +1,7 @@
 // ------------------------------------------------------------
 // Descargar PDF con historial de asistencia (resumen por estudiante)
 // ------------------------------------------------------------
-async descargarPDFAsistencia() {
+async function descargarPDFAsistencia() {
     const seccionId = this.app.currentSectionId;
     if (!seccionId) {
         this.app.ui.showError('No hay sección seleccionada');

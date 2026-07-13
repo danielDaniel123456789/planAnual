@@ -527,7 +527,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                         notaStr = nota !== null && !isNaN(nota) ? nota : '';
                     }
                     
-                    const clase = nota !== null && !isNaN(nota) ? (nota >= 70 ? 'aprobado' : 'reprobado') : 'vacio';
+                    const clase = nota !== null && !isNaN(nota) ? (nota >= 70 ? 'aprobado' : '') : 'vacio';
                     
                     if (nota !== null && !isNaN(nota)) {
                         sumaTotalEstudiante += nota;
@@ -535,7 +535,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                     
                     const esSoloLectura = col.esAsistencia;
                     const inputAttr = esSoloLectura ? 'disabled' : '';
-                    const inputStyle = esSoloLectura ? 'opacity:0.5; cursor:not-allowed;' : '';
+                    const inputStyle = esSoloLectura ? 'opacity:0.8; cursor:not-allowed;' : '';
                     
                     const celdaStyle = isSelected ? 
                         `background:${colorBg}; border-left:3px solid ${color}; box-shadow: inset 0 0 30px ${color};` : 

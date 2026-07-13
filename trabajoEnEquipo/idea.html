@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow · Gestión completa de tareas</title>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        body {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #252525; }
+        ::-webkit-scrollbar-thumb { background: #3d3d3d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 240px;
+            min-width: 240px;
+            background: #252526;
+            border-right: 1px solid #3d3d3d;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #3d3d3d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .sidebar-header h2 { font-weight: 500; font-size: 0.85rem; color: #cccccc; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar-header .btn { padding: 0.1rem 0.4rem; font-size: 0.7rem; }
+        .sidebar-projects { flex: 1; overflow-y: auto; padding: 0.3rem 0; }
+        .sidebar-project {
+            padding: 0.25rem 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            color: #b0b0b0;
+            border-left: 2px solid transparent;
+            transition: all 0.1s;
+        }
+        .sidebar-project:hover { background: #2a2a2a; color: #d4d4d4; }
+        .sidebar-project.active { background: #2a2a2a; border-left-color: #0e639c; color: #d4d4d4; }
+        .sidebar-project .project-icon { font-size: 0.9rem; }
+        .sidebar-project .project-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-project .project-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .sidebar-project .project-status-dot.done { background: #6a9955; }
+        .sidebar-project .project-status-dot.pending { background: #d4a050; }
+
+        .sidebar-students {
+            border-top: 1px solid #3d3d3d;
+            padding: 0.5rem 0.8rem;
+            max-height: 150px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-students .section-title { font-size: 0.65rem; color: #888888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.3rem; }
+        .sidebar-student { display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.3rem; font-size: 0.7rem; color: #b0b0b0; border-radius: 4px; }
+        .sidebar-student:hover { background: #2a2a2a; color: #d4d4d4; }
+        .sidebar-student .student-dot { width: 6px; height: 6px; border-radius: 50%; background: #6a9955; flex-shrink: 0; }
+
+        .sidebar-footer {
+            border-top: 1px solid #3d3d3d;
+            padding: 0.4rem 0.8rem;
+            flex-shrink: 0;
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .sidebar-footer .btn { padding: 0.1rem 0.5rem; font-size: 0.6rem; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #1e1e1e;
+            padding: 0.6rem 1.2rem 0.6rem 1.2rem;
+        }
+
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            padding: 0.3rem 0 0.5rem 0;
+            border-bottom: 1px solid #3d3d3d;
+            flex-shrink: 0;
+        }
+        .main-header-left { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+        .main-header-left h1 { font-weight: 500; font-size: 1.1rem; color: #cccccc; }
+        .main-header-right { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+        .badge { background: #2d2d2d; padding: 0.15rem 0.6rem; border-radius: 4px; font-size: 0.6rem; color: #888888; border: 1px solid #3d3d3d; }
+        .mini-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #2d2d2d;
+            padding: 0.1rem 0.6rem 0.1rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #3d3d3d;
+        }
+        .mini-chart-container canvas { height: 24px !important; width: 60px !important; }
+        .mini-chart-label { font-size: 0.6rem; color: #888888; }
+        .mini-chart-label strong { color: #d4d4d4; }
+
+        .btn {
+            background: #2d2d2d;
+            border: 1px solid #3d3d3d;
+            padding: 0.2rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #cccccc;
+            font-family: inherit;
+        }
+        .btn:hover { background: #3d3d3d; border-color: #4d4d4d; }
+        .btn-primary { background: #0e639c; border-color: #0e639c; color: white; }
+        .btn-primary:hover { background: #1177bb; border-color: #1177bb; }
+        .btn-danger { border-color: #5a1a1a; color: #f48771; }
+        .btn-danger:hover { background: #3d1a1a; border-color: #7a2a2a; }
+        .btn-outline { background: transparent; border-color: #3d3d3d; }
+        .btn-outline:hover { background: #2d2d2d; }
+        .btn-success { border-color: #2d5a3d; color: #6a9955; }
+        .btn-success:hover { background: #1d3d2d; border-color: #3d6a4d; }
+        .btn-sm { padding: 0.1rem 0.4rem; font-size: 0.6rem; }
+
+        .content-panel { flex: 1; overflow-y: auto; padding: 0.6rem 0.2rem 0.6rem 0; }
+        .panel { background: #252526; border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 0.8rem; border: 1px solid #3d3d3d; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
+        .stats-grid { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+        .stat-item { font-size: 0.75rem; color: #888888; }
+        .stat-item strong { font-weight: 500; color: #d4d4d4; font-size: 1rem; }
+
+        .tree {
+            font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            padding: 0.2rem 0;
+        }
+        .tree-node { display: flex; align-items: baseline; gap: 0.2rem; flex-wrap: wrap; padding: 0.05rem 0; }
+        .tree-node:hover { background: #2a2a2a; border-radius: 4px; }
+        .tree-indent { display: inline-block; white-space: pre; color: #4d4d4d; font-weight: 300; }
+        .tree-icon { color: #569cd6; font-weight: 400; }
+        .tree-children { margin-left: 1.5rem; border-left: 1px solid #3d3d3d; padding-left: 0.6rem; }
+        .tree-children.collapsed { display: none; }
+        .tree-item { display: flex; align-items: baseline; gap: 0.3rem; flex-wrap: wrap; padding: 0.05rem 0; }
+        .tree-item:hover { background: #2a2a2a; border-radius: 4px; }
+        .tree-item .label { font-weight: 400; color: #d4d4d4; }
+        .tree-item .tag {
+            background: #2d2d2d;
+            padding: 0.05rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.55rem;
+            font-weight: 400;
+            color: #858585;
+            border: 1px solid #3d3d3d;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tree-item .student-badge {
+            background: #1e3a2e;
+            color: #6a9955;
+            padding: 0.05rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            border: 1px solid #2d5a3d;
+        }
+        .tree-item .note-item {
+            background: #2d2d2d;
+            border-left: 3px solid #569cd6;
+            padding: 0.05rem 0.4rem;
+            font-size: 0.65rem;
+            border-radius: 0 4px 4px 0;
+            color: #b0b0b0;
+        }
+        .tree-actions { display: inline-flex; gap: 0.15rem; margin-left: 0.2rem; }
+        .tree-actions .btn { padding: 0.05rem 0.35rem; font-size: 0.55rem; border-radius: 4px; }
+        .btn-collapse { background: transparent; border: none; cursor: pointer; font-size: 0.8rem; padding: 0 0.15rem; color: #6a6a6a; font-family: monospace; }
+        .btn-collapse:hover { color: #cccccc; }
+        .btn-chart { background: transparent; border: none; cursor: pointer; font-size: 0.9rem; padding: 0 0.15rem; color: #6a9955; }
+        .btn-chart:hover { color: #8ab87a; }
+
+        .project-status { font-size: 0.65rem; padding: 0.1rem 0.5rem; border-radius: 4px; background: #2d2d2d; border: 1px solid #3d3d3d; }
+        .project-status.done { background: #1e3a2e; border-color: #2d5a3d; color: #6a9955; }
+        .project-status.pending { background: #3d2d1a; border-color: #5a4a2d; color: #d4a050; }
+        .completed-badge { background: #1e3a2e; color: #6a9955; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.55rem; border: 1px solid #2d5a3d; }
+        .admin-badge { background: #2d2d3d; color: #9cdcfe; padding: 0.05rem 0.5rem; border-radius: 4px; font-size: 0.6rem; border: 1px solid #3d3d5a; }
+        .due-date { background: #2d2d2d; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.55rem; color: #888888; border: 1px solid #3d3d3d; }
+        .due-date.overdue { background: #3d1a1a; color: #f48771; border-color: #5a2a2a; }
+        .stats-badge { background: #2d2d2d; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.65rem; color: #888888; border: 1px solid #3d3d3d; }
+        .stats-badge strong { color: #d4d4d4; font-weight: 400; }
+        .progress-bar-container { background: #2d2d2d; border-radius: 4px; height: 4px; width: 60px; display: inline-block; margin-left: 0.2rem; vertical-align: middle; }
+        .progress-bar-fill { background: #6a9955; height: 4px; border-radius: 4px; width: 0%; transition: width 0.3s; }
+        .assigned-to { background: #2d2d3d; color: #9cdcfe; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.55rem; border: 1px solid #3d3d5a; }
+        .card-desc { font-size: 0.65rem; color: #888888; font-family: sans-serif; }
+        .evidence-link { background: #1e3a2e; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.55rem; color: #6a9955; border: 1px solid #2d5a3d; cursor: pointer; text-decoration: none; }
+        .evidence-link:hover { background: #2d5a3d; }
+        .delete-btn { cursor: pointer; color: #6a6a6a; font-size: 0.55rem; padding: 0 0.1rem; transition: color 0.2s; }
+        .delete-btn:hover { color: #f48771; }
+
+        /* Estilo para el estado de tarea */
+        .task-status {
+            font-size: 0.55rem;
+            padding: 0.05rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 500;
+            border: 1px solid #3d3d3d;
+        }
+        .task-status.in-progress { background: #3d2d1a; border-color: #5a4a2d; color: #d4a050; }
+        .task-status.done { background: #1e3a2e; border-color: #2d5a3d; color: #6a9955; }
+        .task-status.pending { background: #2d2d2d; border-color: #3d3d3d; color: #858585; }
+
+        .modal {
+            background: #252526;
+            border-radius: 6px;
+            padding: 1.2rem 1.5rem;
+            max-width: 480px;
+            width: 90%;
+            margin: 2rem auto;
+            border: 1px solid #3d3d3d;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+        }
+        .modal input, .modal select, .modal textarea {
+            width: 100%;
+            padding: 0.35rem 0.7rem;
+            border-radius: 4px;
+            border: 1px solid #3d3d3d;
+            margin: 0.2rem 0 0.5rem;
+            font-family: inherit;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-size: 0.8rem;
+        }
+        .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #0e639c; }
+        .modal textarea { border-radius: 4px; resize: vertical; min-height: 50px; }
+        .modal h3 { font-weight: 500; color: #d4d4d4; margin-bottom: 0.5rem; font-size: 1rem; }
+        .modal label { font-size: 0.75rem; color: #888888; display: block; }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.6rem; }
+        .hidden { display: none !important; }
+        .text-muted { color: #6a6a6a; font-size: 0.75rem; }
+
+        .chart-modal { max-width: 650px; width: 90%; background: #1e1e1e; }
+        .chart-container { position: relative; height: 250px; margin: 0.5rem 0; }
+        .student-list-chart { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.2rem 0; }
+        .student-chip { background: #2d2d2d; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.65rem; display: flex; align-items: center; gap: 0.2rem; border: 1px solid #3d3d3d; }
+        .student-chip.done { border-color: #2d5a3d; background: #1e3a2e; }
+        .student-chip.pending { border-color: #5a4a2d; background: #3d2d1a; }
+        .student-tag { background: #2d2d3d; color: #9cdcfe; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.65rem; border: 1px solid #3d3d5a; }
+
+        @media (max-width: 720px) { .sidebar { width: 160px; min-width: 160px; } .main-content { padding: 0.5rem 0.8rem; } .tree { font-size: 0.7rem; } .tree-children { margin-left: 1rem; } }
+        @media (max-width: 520px) {
+            .sidebar { width: 50px; min-width: 50px; }
+            .sidebar-header h2 { display: none; }
+            .sidebar-project .project-name { display: none; }
+            .sidebar-project .project-status-dot { display: none; }
+            .sidebar-students .section-title { display: none; }
+            .sidebar-student .student-name { display: none; }
+            .sidebar-footer .btn { font-size: 0.5rem; padding: 0.1rem 0.3rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- ===== SIDEBAR ===== -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>📁 Proyectos</h2>
+            <button class="btn btn-primary btn-sm" id="newProjectBtnSidebar">+</button>
+        </div>
+        <div class="sidebar-projects" id="sidebarProjects"></div>
+        <div class="sidebar-students" id="sidebarStudents">
+            <div class="section-title">👥 Estudiantes</div>
+            <div id="sidebarStudentList"></div>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline btn-sm" id="addStudentBtnSidebar">👤 Estudiante</button>
+            <button class="btn btn-outline btn-sm" id="resetDataBtnSidebar">♻️</button>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="main-content">
+        <div class="main-header">
+            <div class="main-header-left">
+                <h1 id="mainTitle">📋 TaskFlow</h1>
+                <div id="miniChartContainer" class="mini-chart-container hidden">
+                    <canvas id="miniChart"></canvas>
+                    <span class="mini-chart-label" id="miniChartLabel"><strong>0%</strong></span>
+                </div>
+            </div>
+            <div class="main-header-right">
+                <span class="badge">VSCode Dark</span>
+                <button class="btn btn-primary btn-sm" id="newProjectBtn">➕ Nuevo</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="content-panel" id="contentPanel">
+            <div class="panel" id="dashboardPanel">
+                <div class="stats-grid">
+                    <div class="stat-item">Proyectos <br><strong id="statProjects">0</strong></div>
+                    <div class="stat-item">Procesos <br><strong id="statCards">0</strong></div>
+                    <div class="stat-item">Tareas <br><strong id="statTasks">0</strong></div>
+                    <div class="stat-item">Estudiantes <br><strong id="statStudents">0</strong></div>
+                </div>
+                <div style="margin-top:0.5rem; display:flex; flex-wrap:wrap; gap:0.3rem;">
+                    <button class="btn btn-outline btn-sm" id="addStudentBtn">👤 Agregar Estudiante</button>
+                    <button class="btn btn-outline btn-sm" id="resetDataBtn">♻️ Reiniciar demo</button>
+                </div>
+                <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:0.2rem; align-items:center;">
+                    <span class="text-muted" style="font-size:0.65rem;">📋 Estudiantes:</span>
+                    <div id="studentList" style="display:flex; flex-wrap:wrap; gap:0.15rem;"></div>
+                </div>
+            </div>
+
+            <div id="projectList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA GRÁFICO -->
+<div id="chartModalContainer" class="hidden" style="position: fixed; inset:0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal chart-modal" id="chartModalContent">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+            <h3 id="chartModalTitle" style="color:#d4d4d4; font-weight:400;">📊 Avance del Proyecto</h3>
+            <button class="btn btn-outline btn-sm" id="chartModalClose">✕</button>
+        </div>
+        <div id="chartModalBody"></div>
+    </div>
+</div>
+
+<!-- MODAL GENERAL -->
+<div id="modalContainer" class="hidden" style="position: fixed; inset:0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 999;">
+    <div class="modal" id="modalContent">
+        <h3 id="modalTitle">Nuevo</h3>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline btn-sm" id="modalCancel">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="modalConfirm">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let data = { projects: [], students: [] };
+        const STORAGE_KEY = 'taskflow_demo_data';
+        let collapsed = {};
+        let chartInstances = {};
+        let miniChartInstance = null;
+        let selectedProjectId = null;
+
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    data = JSON.parse(stored);
+                    if (!data.projects) data.projects = [];
+                    if (!data.students) data.students = [];
+                    data.projects.forEach(p => {
+                        if (!p.admin) p.admin = '';
+                        if (!p.cards) p.cards = [];
+                        p.cards.forEach(c => {
+                            if (!c.description) c.description = '';
+                            if (!c.assignedTo) c.assignedTo = '';
+                            if (!c.dueDate) c.dueDate = '';
+                            if (!c.tasks) c.tasks = [];
+                            c.tasks.forEach(t => {
+                                if (!t.subtasks) t.subtasks = [];
+                                if (!t.helpers) t.helpers = [];
+                                if (!t.notes) t.notes = [];
+                                if (t.completed === undefined) t.completed = false;
+                                if (!t.status) t.status = 'pending';
+                                if (!t.leader) t.leader = { name: 'Sin líder' };
+                                if (!t.assignedStudent) t.assignedStudent = '';
+                                t.helpers.forEach(h => {
+                                    if (!h.id) h.id = 'h_' + Date.now() + '_' + Math.random();
+                                    if (h.completed === undefined) h.completed = false;
+                                    if (h.evidence === undefined) h.evidence = '';
+                                });
+                            });
+                        });
+                    });
+                } catch (e) { data = { projects: [], students: [] }; }
+            } else {
+                data = {
+                    projects: [{
+                        id: 'p1',
+                        name: 'Ingeniería de Software 2025',
+                        admin: 'Dr. Martínez',
+                        cards: [{
+                            id: 'c1',
+                            name: 'Matemáticas Discretas',
+                            description: 'Lógica, conjuntos y relaciones',
+                            assignedTo: 'Carlos',
+                            dueDate: '2025-03-15T23:59',
+                            tasks: [{
+                                id: 't1',
+                                name: 'Lógica proposicional',
+                                leader: { name: 'Dra. Gómez' },
+                                assignedStudent: 'Carlos',
+                                status: 'in-progress',
+                                completed: false,
+                                helpers: [{ id: 's1', name: 'Carlos', email: 'carlos@demo.com', completed: false, evidence: '' }],
+                                subtasks: [{ name: 'Resolver ejercicios', status: 'Finalizada', assignedTo: 'Carlos' }],
+                                notes: [{ author: 'Carlos', text: 'Ejercicios resueltos, falta revisar el 5' }]
+                            }, {
+                                id: 't2',
+                                name: 'Teoría de conjuntos',
+                                leader: { name: 'Dr. Pérez' },
+                                assignedStudent: 'Luis',
+                                status: 'pending',
+                                completed: false,
+                                helpers: [{ id: 's3', name: 'Luis', email: 'luis@demo.com', completed: false, evidence: '' }],
+                                subtasks: [{ name: 'Diagramas de Venn', status: 'Pendiente', assignedTo: 'Luis' }],
+                                notes: [{ author: 'Luis', text: 'Investigando sobre conjuntos infinitos' }]
+                            }]
+                        }, {
+                            id: 'c2',
+                            name: 'Programación Orientada a Objetos',
+                            description: 'Herencia, polimorfismo y patrones',
+                            assignedTo: 'Ana',
+                            dueDate: '2025-04-20T23:59',
+                            tasks: [{
+                                id: 't3',
+                                name: 'Herencia y polimorfismo',
+                                leader: { name: 'Ing. Ramírez' },
+                                assignedStudent: 'Ana',
+                                status: 'in-progress',
+                                completed: false,
+                                helpers: [{ id: 's4', name: 'Ana', email: 'ana@demo.com', completed: false, evidence: '' }],
+                                subtasks: [{ name: 'Implementar clases', status: 'Finalizada', assignedTo: 'Ana' }, { name: 'Pruebas unitarias', status: 'Pendiente', assignedTo: 'Ana' }],
+                                notes: [{ author: 'Ana', text: 'Clases implementadas, faltan pruebas' }]
+                            }]
+                        }]
+                    }],
+                    students: [
+                        { id: 's1', name: 'Carlos', email: 'carlos@demo.com' },
+                        { id: 's2', name: 'María', email: 'maria@demo.com' },
+                        { id: 's3', name: 'Luis', email: 'luis@demo.com' },
+                        { id: 's4', name: 'Ana', email: 'ana@demo.com' },
+                        { id: 's5', name: 'Pedro', email: 'pedro@demo.com' }
+                    ]
+                };
+            }
+            data.projects.forEach(p => {
+                const projId = `proj-${p.id}`;
+                if (!(projId in collapsed)) collapsed[projId] = true;
+                p.cards.forEach(c => {
+                    const cardId = `card-${p.id}-${c.id}`;
+                    if (!(cardId in collapsed)) collapsed[cardId] = true;
+                    c.tasks.forEach(t => {
+                        const taskId = `task-${p.id}-${c.id}-${t.id}`;
+                        if (!(taskId in collapsed)) collapsed[taskId] = true;
+                    });
+                });
+            });
+            if (data.projects.length > 0 && !selectedProjectId) {
+                selectedProjectId = data.projects[0].id;
+            }
+            saveData();
+            renderAll();
+        }
+
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+        function renderAll() {
+            renderStats();
+            renderStudentList();
+            renderSidebarProjects();
+            renderSidebarStudents();
+            renderProjects();
+            updateMainTitle();
+            updateMiniChart();
+        }
+
+        function renderStats() {
+            let totalCards = 0, totalTasks = 0;
+            data.projects.forEach(p => { p.cards.forEach(c => { totalCards++; c.tasks.forEach(t => { totalTasks++; }); }); });
+            document.getElementById('statProjects').textContent = data.projects.length;
+            document.getElementById('statCards').textContent = totalCards;
+            document.getElementById('statTasks').textContent = totalTasks;
+            document.getElementById('statStudents').textContent = data.students.length;
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('studentList');
+            if (!data.students.length) { container.innerHTML = '<span class="text-muted">No hay estudiantes</span>'; return; }
+            container.innerHTML = data.students.map(s => `<span class="student-tag">👤 ${s.name}</span>`).join(' ');
+        }
+
+        function renderSidebarStudents() {
+            const container = document.getElementById('sidebarStudentList');
+            if (!data.students.length) { container.innerHTML = '<span class="text-muted" style="font-size:0.6rem;">No hay estudiantes</span>'; return; }
+            container.innerHTML = data.students.map(s => `<div class="sidebar-student"><span class="student-dot"></span><span class="student-name">${s.name}</span></div>`).join('');
+        }
+
+        function renderSidebarProjects() {
+            const container = document.getElementById('sidebarProjects');
+            if (!data.projects.length) { container.innerHTML = `<div style="padding:0.8rem; color:#6a6a6a; font-size:0.7rem; text-align:center;">No hay proyectos</div>`; return; }
+            let html = '';
+            data.projects.forEach(p => {
+                const isActive = p.id === selectedProjectId;
+                const done = isProjectCompleted(p);
+                html += `<div class="sidebar-project ${isActive ? 'active' : ''}" data-project-id="${p.id}">
+                    <span class="project-icon">📁</span>
+                    <span class="project-name">${p.name}</span>
+                    <span class="project-status-dot ${done ? 'done' : 'pending'}"></span>
+                </div>`;
+            });
+            container.innerHTML = html;
+            container.querySelectorAll('.sidebar-project').forEach(el => {
+                el.addEventListener('click', function() {
+                    const id = this.dataset.projectId;
+                    if (id) { selectedProjectId = id; renderAll(); }
+                });
+            });
+        }
+
+        function updateMainTitle() {
+            const title = document.getElementById('mainTitle');
+            if (selectedProjectId) {
+                const project = data.projects.find(p => p.id === selectedProjectId);
+                if (project) { title.textContent = `📋 ${project.name}`; return; }
+            }
+            title.textContent = '📋 TaskFlow';
+        }
+
+        function updateMiniChart() {
+            const container = document.getElementById('miniChartContainer');
+            const label = document.getElementById('miniChartLabel');
+            if (!selectedProjectId) { container.classList.add('hidden'); return; }
+            const project = data.projects.find(p => p.id === selectedProjectId);
+            if (!project) { container.classList.add('hidden'); return; }
+            const progress = getProjectProgress(project);
+            container.classList.remove('hidden');
+            label.innerHTML = `<strong>${progress.percent}%</strong>`;
+            if (miniChartInstance) { miniChartInstance.destroy(); miniChartInstance = null; }
+            const ctx = document.getElementById('miniChart').getContext('2d');
+            const done = progress.completed;
+            const pending = progress.total - progress.completed;
+            miniChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: { datasets: [{ data: [done, pending], backgroundColor: ['#6a9955', '#3d3d3d'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '70%' }
+            });
+        }
+
+        function getProjectProgress(project) {
+            let totalHelpers = 0, completedHelpers = 0;
+            project.cards.forEach(c => {
+                c.tasks.forEach(t => {
+                    t.helpers.forEach(h => { totalHelpers++; if (h.completed) completedHelpers++; });
+                });
+            });
+            return { total: totalHelpers, completed: completedHelpers, percent: totalHelpers > 0 ? Math.round(completedHelpers / totalHelpers * 100) : 0 };
+        }
+
+        function isProjectCompleted(project) {
+            if (!project.cards || project.cards.length === 0) return false;
+            for (let card of project.cards) {
+                if (!card.tasks || card.tasks.length === 0) return false;
+                for (let task of card.tasks) {
+                    if (!task.completed) return false;
+                }
+            }
+            return true;
+        }
+
+        function isDateOverdue(dueDate) {
+            if (!dueDate) return false;
+            const now = new Date();
+            const due = new Date(dueDate);
+            return now > due;
+        }
+
+        function formatDate(dueDate) {
+            if (!dueDate) return '';
+            const d = new Date(dueDate);
+            return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function confirmDelete(title, text, callback) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                background: '#252526',
+                color: '#d4d4d4',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3d3d3d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                showCancelButton: true,
+                backdrop: 'rgba(0,0,0,0.6)',
+            }).then((result) => { if (result.isConfirmed) callback(); });
+        }
+
+        function openChart(projectId) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const studentsMap = {};
+            project.cards.forEach(c => {
+                c.tasks.forEach(t => {
+                    t.helpers.forEach(h => {
+                        if (!studentsMap[h.name]) studentsMap[h.name] = { name: h.name, completed: 0, total: 0 };
+                        studentsMap[h.name].total++;
+                        if (h.completed) studentsMap[h.name].completed++;
+                    });
+                });
+            });
+            const studentNames = Object.keys(studentsMap);
+            const completedData = studentNames.map(s => studentsMap[s].completed);
+            const totalData = studentNames.map(s => studentsMap[s].total);
+            const modalBody = document.getElementById('chartModalBody');
+            modalBody.innerHTML = `
+                <div style="margin-bottom:0.5rem;">
+                    <p style="font-size:0.75rem; color:#888888;"><strong style="color:#d4d4d4;">Proyecto:</strong> ${project.name}</p>
+                    <p style="font-size:0.75rem; color:#888888;"><strong style="color:#d4d4d4;">Administrador:</strong> ${project.admin || 'No asignado'}</p>
+                    <div class="student-list-chart">${studentNames.map(s => {
+                        const pct = studentsMap[s].total > 0 ? Math.round(studentsMap[s].completed / studentsMap[s].total * 100) : 0;
+                        return `<span class="student-chip ${pct === 100 ? 'done' : 'pending'}">${s} (${pct}%)</span>`;
+                    }).join('')}</div>
+                </div>
+                <div class="chart-container"><canvas id="progressChart"></canvas></div>
+                <div style="margin-top:0.2rem; font-size:0.65rem; color:#6a6a6a;"><span>🟢 Completado</span> · <span>🟡 Pendiente</span></div>
+            `;
+            document.getElementById('chartModalContainer').classList.remove('hidden');
+            document.getElementById('chartModalTitle').textContent = `📊 Avance - ${project.name}`;
+            if (chartInstances[projectId]) { chartInstances[projectId].destroy(); delete chartInstances[projectId]; }
+            setTimeout(() => {
+                const ctx = document.getElementById('progressChart');
+                if (!ctx) return;
+                chartInstances[projectId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: studentNames,
+                        datasets: [
+                            { label: 'Completado', data: completedData, backgroundColor: '#6a9955', borderRadius: 2 },
+                            { label: 'Pendiente', data: totalData.map((t, i) => t - completedData[i]), backgroundColor: '#d4a050', borderRadius: 2 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#888888', font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.raw || 0;
+                                        const total = totalData[context.dataIndex] || 0;
+                                        const pct = total > 0 ? Math.round(value / total * 100) : 0;
+                                        return `${label}: ${value} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: '#2d2d2d' }, ticks: { color: '#888888', font: { size: 9 } } },
+                            y: { beginAtZero: true, stacked: true, grid: { color: '#2d2d2d' }, ticks: { color: '#888888', font: { size: 9 } }, title: { display: true, text: 'Tareas', color: '#888888', font: { size: 9 } } }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        function closeChart() {
+            document.getElementById('chartModalContainer').classList.add('hidden');
+            Object.keys(chartInstances).forEach(key => { if (chartInstances[key]) { chartInstances[key].destroy(); delete chartInstances[key]; } });
+        }
+
+        function openModal(title, bodyHTML, onConfirm) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').innerHTML = bodyHTML;
+            document.getElementById('modalContainer').classList.remove('hidden');
+            document.getElementById('modalConfirm').onclick = function() { onConfirm(); closeModal(); };
+            document.getElementById('modalCancel').onclick = closeModal;
+        }
+
+        function closeModal() { document.getElementById('modalContainer').classList.add('hidden'); }
+
+        // ===== ACCIONES =====
+        function openAddProject() {
+            const studentOptions = data.students.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            openModal('Nuevo Proyecto', `
+                <label>Nombre del proyecto</label><input id="inputProjectName" placeholder="Ej: Ingeniería 2026" value="Proyecto ${data.projects.length+1}">
+                <label>Administrador</label>
+                <select id="inputProjectAdmin">
+                    <option value="">Seleccionar administrador</option>
+                    ${studentOptions}
+                    <option value="Otro">Otro (escribir nombre)</option>
+                </select>
+                <div id="adminNameContainer" style="display:none;">
+                    <label>Nombre del administrador</label><input id="inputProjectAdminName" placeholder="Nombre del administrador">
+                </div>
+            `, function() {
+                const name = document.getElementById('inputProjectName').value.trim();
+                let admin = document.getElementById('inputProjectAdmin').value;
+                if (admin === 'Otro') admin = document.getElementById('inputProjectAdminName').value.trim();
+                if (name) {
+                    const newProject = { id: 'p'+Date.now(), name, admin: admin || '', cards: [] };
+                    data.projects.push(newProject);
+                    selectedProjectId = newProject.id;
+                    saveData();
+                    renderAll();
+                }
+            });
+            document.getElementById('inputProjectAdmin')?.addEventListener('change', function() {
+                const container = document.getElementById('adminNameContainer');
+                container.style.display = this.value === 'Otro' ? 'block' : 'none';
+            });
+        }
+
+        function openEditProject(projectId) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const studentOptions = data.students.map(s => `<option value="${s.name}" ${s.name === project.admin ? 'selected' : ''}>${s.name}</option>`).join('');
+            openModal('Editar Proyecto', `
+                <label>Nombre</label><input id="inputEditProjectName" value="${project.name}">
+                <label>Administrador</label>
+                <select id="inputEditProjectAdmin">
+                    <option value="">Seleccionar administrador</option>
+                    ${studentOptions}
+                    <option value="Otro" ${!data.students.some(s => s.name === project.admin) && project.admin ? 'selected' : ''}>Otro</option>
+                </select>
+                <div id="editAdminNameContainer" style="display:${!data.students.some(s => s.name === project.admin) && project.admin ? 'block' : 'none'};">
+                    <label>Nombre</label><input id="inputEditProjectAdminName" value="${!data.students.some(s => s.name === project.admin) ? project.admin : ''}">
+                </div>
+            `, function() {
+                const name = document.getElementById('inputEditProjectName').value.trim();
+                let admin = document.getElementById('inputEditProjectAdmin').value;
+                if (admin === 'Otro') admin = document.getElementById('inputEditProjectAdminName').value.trim();
+                if (name) { project.name = name; project.admin = admin || ''; saveData(); renderAll(); }
+            });
+            document.getElementById('inputEditProjectAdmin')?.addEventListener('change', function() {
+                const container = document.getElementById('editAdminNameContainer');
+                container.style.display = this.value === 'Otro' ? 'block' : 'none';
+            });
+        }
+
+        function openAddCard(projectId) {
+            const studentOptions = data.students.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            openModal('Nuevo Proceso', `
+                <label>Nombre</label><input id="inputCardName" placeholder="Ej: Matemáticas" value="Proceso ${Date.now().toString().slice(-4)}">
+                <label>Descripción</label><textarea id="inputCardDescription">Descripción del proceso</textarea>
+                <label>Asignado a</label>
+                <select id="inputCardAssigned">
+                    <option value="">Seleccionar estudiante</option>
+                    ${studentOptions}
+                </select>
+                <label>Fecha y hora de entrega</label>
+                <input type="datetime-local" id="inputCardDueDate">
+            `, function() {
+                const name = document.getElementById('inputCardName').value.trim();
+                const description = document.getElementById('inputCardDescription').value.trim();
+                const assignedTo = document.getElementById('inputCardAssigned').value;
+                const dueDate = document.getElementById('inputCardDueDate').value;
+                if (name) {
+                    const project = data.projects.find(p => p.id === projectId);
+                    if (project) {
+                        project.cards.push({ id: 'c'+Date.now(), name, description: description || '', assignedTo: assignedTo || '', dueDate: dueDate || '', tasks: [] });
+                        saveData();
+                        renderAll();
+                    }
+                }
+            });
+        }
+
+        function openEditCard(projectId, cardId) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const card = project.cards.find(c => c.id === cardId);
+            if (!card) return;
+            const studentOptions = data.students.map(s => `<option value="${s.name}" ${s.name === card.assignedTo ? 'selected' : ''}>${s.name}</option>`).join('');
+            openModal('Editar Proceso', `
+                <label>Nombre</label><input id="inputEditCardName" value="${card.name}">
+                <label>Descripción</label><textarea id="inputEditCardDescription">${card.description || ''}</textarea>
+                <label>Asignado a</label>
+                <select id="inputEditCardAssigned">
+                    <option value="">Seleccionar estudiante</option>
+                    ${studentOptions}
+                </select>
+                <label>Fecha y hora de entrega</label>
+                <input type="datetime-local" id="inputEditCardDueDate" value="${card.dueDate || ''}">
+            `, function() {
+                const name = document.getElementById('inputEditCardName').value.trim();
+                const description = document.getElementById('inputEditCardDescription').value.trim();
+                const assignedTo = document.getElementById('inputEditCardAssigned').value;
+                const dueDate = document.getElementById('inputEditCardDueDate').value;
+                if (name) { card.name = name; card.description = description || ''; card.assignedTo = assignedTo || ''; card.dueDate = dueDate || ''; saveData(); renderAll(); }
+            });
+        }
+
+        function openAddTask(projectId, cardId) {
+            const studentOptions = data.students.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            openModal('Nueva Tarea', `
+                <label>Nombre</label><input id="inputTaskName" placeholder="Ej: Resolver ejercicios" value="Tarea ${Date.now().toString().slice(-4)}">
+                <label>Responsable (profesor/líder)</label><input id="inputLeaderName" placeholder="Nombre" value="Prof. ${Math.floor(Math.random()*100)}">
+                <label>Asignar a estudiante</label>
+                <select id="inputTaskStudent">
+                    <option value="">Seleccionar estudiante</option>
+                    ${studentOptions}
+                </select>
+                <label>Estado</label>
+                <select id="inputTaskStatus">
+                    <option value="pending">Pendiente</option>
+                    <option value="in-progress">En proceso</option>
+                    <option value="done">Finalizada</option>
+                </select>
+            `, function() {
+                const name = document.getElementById('inputTaskName').value.trim();
+                const leaderName = document.getElementById('inputLeaderName').value.trim() || 'Sin responsable';
+                const assignedStudent = document.getElementById('inputTaskStudent').value;
+                const status = document.getElementById('inputTaskStatus').value || 'pending';
+                if (name) {
+                    const project = data.projects.find(p => p.id === projectId);
+                    if (project) {
+                        const card = project.cards.find(c => c.id === cardId);
+                        if (card) {
+                            const newTask = {
+                                id: 't'+Date.now(),
+                                name,
+                                leader: { name: leaderName },
+                                assignedStudent: assignedStudent || '',
+                                status: status,
+                                completed: status === 'done',
+                                helpers: [],
+                                subtasks: [],
+                                notes: []
+                            };
+                            if (assignedStudent) {
+                                const student = data.students.find(s => s.name === assignedStudent);
+                                if (student) {
+                                    newTask.helpers.push({
+                                        id: student.id,
+                                        name: student.name,
+                                        email: student.email,
+                                        completed: status === 'done',
+                                        evidence: ''
+                                    });
+                                }
+                            }
+                            card.tasks.push(newTask);
+                            saveData();
+                            renderAll();
+                        }
+                    }
+                }
+            });
+        }
+
+        function openEditTask(projectId, cardId, taskId) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const card = project.cards.find(c => c.id === cardId);
+            if (!card) return;
+            const task = card.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            const studentOptions = data.students.map(s => `<option value="${s.name}" ${s.name === task.assignedStudent ? 'selected' : ''}>${s.name}</option>`).join('');
+            openModal('Editar Tarea', `
+                <label>Nombre</label><input id="inputEditTaskName" value="${task.name}">
+                <label>Responsable</label><input id="inputEditLeaderName" value="${task.leader.name}">
+                <label>Asignar a estudiante</label>
+                <select id="inputEditTaskStudent">
+                    <option value="">Seleccionar estudiante</option>
+                    ${studentOptions}
+                </select>
+                <label>Estado</label>
+                <select id="inputEditTaskStatus">
+                    <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pendiente</option>
+                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>En proceso</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>Finalizada</option>
+                </select>
+            `, function() {
+                const name = document.getElementById('inputEditTaskName').value.trim();
+                const leaderName = document.getElementById('inputEditLeaderName').value.trim() || 'Sin responsable';
+                const assignedStudent = document.getElementById('inputEditTaskStudent').value;
+                const status = document.getElementById('inputEditTaskStatus').value || 'pending';
+                if (name) {
+                    task.name = name;
+                    task.leader.name = leaderName;
+                    task.status = status;
+                    task.completed = status === 'done';
+                    // Actualizar asignación
+                    if (assignedStudent !== task.assignedStudent) {
+                        if (task.assignedStudent) {
+                            task.helpers = task.helpers.filter(h => h.name !== task.assignedStudent);
+                        }
+                        task.assignedStudent = assignedStudent || '';
+                        if (assignedStudent) {
+                            const student = data.students.find(s => s.name === assignedStudent);
+                            if (student && !task.helpers.some(h => h.name === assignedStudent)) {
+                                task.helpers.push({
+                                    id: student.id,
+                                    name: student.name,
+                                    email: student.email,
+                                    completed: status === 'done',
+                                    evidence: ''
+                                });
+                            }
+                        }
+                    } else if (assignedStudent) {
+                        // Actualizar estado del helper
+                        const helper = task.helpers.find(h => h.name === assignedStudent);
+                        if (helper) helper.completed = status === 'done';
+                    }
+                    saveData();
+                    renderAll();
+                }
+            });
+        }
+
+        function openAddSubtask(projectId, cardId, taskId) {
+            const studentOptions = data.students.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            openModal('Nueva Subtarea', `
+                <label>Nombre</label><input id="inputSubtaskName" placeholder="Ej: Investigar" value="Subtarea ${Date.now().toString().slice(-4)}">
+                <label>Estado</label>
+                <select id="inputSubtaskStatus"><option>Pendiente</option><option>En proceso</option><option>Revisando</option><option>Finalizada</option></select>
+                <label>Asignado a</label>
+                <select id="inputSubtaskAssigned">
+                    <option value="">Seleccionar estudiante</option>
+                    ${studentOptions}
+                </select>
+            `, function() {
+                const name = document.getElementById('inputSubtaskName').value.trim();
+                const status = document.getElementById('inputSubtaskStatus').value;
+                const assignedTo = document.getElementById('inputSubtaskAssigned').value || 'Sin asignar';
+                if (name) {
+                    const project = data.projects.find(p => p.id === projectId);
+                    if (project) {
+                        const card = project.cards.find(c => c.id === cardId);
+                        if (card) {
+                            const task = card.tasks.find(t => t.id === taskId);
+                            if (task) {
+                                task.subtasks.push({ name, status, assignedTo });
+                                if (assignedTo !== 'Sin asignar' && !task.helpers.some(h => h.name === assignedTo)) {
+                                    const student = data.students.find(s => s.name === assignedTo);
+                                    task.helpers.push({
+                                        id: student ? student.id : 'h_' + Date.now(),
+                                        name: assignedTo,
+                                        email: student ? student.email : assignedTo.toLowerCase()+'@demo.com',
+                                        completed: false,
+                                        evidence: ''
+                                    });
+                                }
+                                saveData();
+                                renderAll();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openAddHelper(projectId, cardId, taskId) {
+            const studentOptions = data.students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            openModal('Agregar Estudiante', `
+                <label>Seleccionar estudiante</label>
+                <select id="inputHelperSelect">
+                    <option value="">Seleccionar...</option>
+                    ${studentOptions}
+                </select>
+            `, function() {
+                const studentId = document.getElementById('inputHelperSelect').value;
+                if (studentId) {
+                    const student = data.students.find(s => s.id === studentId);
+                    if (student) {
+                        const project = data.projects.find(p => p.id === projectId);
+                        if (project) {
+                            const card = project.cards.find(c => c.id === cardId);
+                            if (card) {
+                                const task = card.tasks.find(t => t.id === taskId);
+                                if (task && !task.helpers.some(h => h.id === studentId)) {
+                                    task.helpers.push({
+                                        id: student.id,
+                                        name: student.name,
+                                        email: student.email,
+                                        completed: false,
+                                        evidence: ''
+                                    });
+                                    if (!task.assignedStudent) task.assignedStudent = student.name;
+                                    saveData();
+                                    renderAll();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openAddStudentNote(projectId, cardId, taskId, studentName) {
+            openModal(`Nota - ${studentName}`, `
+                <label>Nota</label><textarea id="inputStudentNote" placeholder="Escribe una nota...">Nota de ${studentName}</textarea>
+            `, function() {
+                const noteText = document.getElementById('inputStudentNote').value.trim();
+                if (noteText) {
+                    const project = data.projects.find(p => p.id === projectId);
+                    if (project) {
+                        const card = project.cards.find(c => c.id === cardId);
+                        if (card) {
+                            const task = card.tasks.find(t => t.id === taskId);
+                            if (task) {
+                                if (!task.notes) task.notes = [];
+                                task.notes.push({ author: studentName, text: noteText });
+                                saveData();
+                                renderAll();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openCompleteTask(projectId, cardId, taskId, studentName) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const card = project.cards.find(c => c.id === cardId);
+            if (!card) return;
+            const task = card.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            const helper = task.helpers.find(h => h.name === studentName);
+            if (!helper) return;
+            const currentEvidence = helper.evidence || '';
+            openModal(`✅ Completar - ${studentName}`, `
+                <label>Evidencia (enlace o descripción de lo realizado)</label>
+                <textarea id="inputEvidence" placeholder="URL del trabajo, descripción...">${currentEvidence}</textarea>
+                <p style="font-size:0.65rem; color:#6a6a6a; margin-top:-0.2rem;">Ej: "https://github.com/mi-repositorio" o "Ejercicios completados"</p>
+            `, function() {
+                const evidence = document.getElementById('inputEvidence').value.trim();
+                helper.evidence = evidence || '';
+                helper.completed = true;
+                // Si todos los ayudantes terminaron, actualizar estado de la tarea
+                const allDone = task.helpers.every(h => h.completed);
+                if (allDone) {
+                    task.status = 'done';
+                    task.completed = true;
+                } else {
+                    task.status = 'in-progress';
+                }
+                saveData();
+                renderAll();
+            });
+        }
+
+        function markHelperDone(projectId, cardId, taskId, studentName) {
+            openCompleteTask(projectId, cardId, taskId, studentName);
+        }
+
+        function unmarkHelperDone(projectId, cardId, taskId, studentName) {
+            confirmDelete('Desmarcar como completado', `Revertir estado de ${studentName}`, function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (!project) return;
+                const card = project.cards.find(c => c.id === cardId);
+                if (!card) return;
+                const task = card.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                const helper = task.helpers.find(h => h.name === studentName);
+                if (helper) {
+                    helper.completed = false;
+                    helper.evidence = '';
+                    task.status = 'in-progress';
+                    task.completed = false;
+                    saveData();
+                    renderAll();
+                }
+            });
+        }
+
+        function markTaskDone(projectId, cardId, taskId) {
+            const project = data.projects.find(p => p.id === projectId);
+            if (!project) return;
+            const card = project.cards.find(c => c.id === cardId);
+            if (!card) return;
+            const task = card.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'done';
+                task.completed = true;
+                task.helpers.forEach(h => { h.completed = true; });
+                saveData();
+                renderAll();
+            }
+        }
+
+        function unmarkTaskDone(projectId, cardId, taskId) {
+            confirmDelete('Desmarcar tarea', 'Revertir estado de la tarea y ayudantes.', function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (!project) return;
+                const card = project.cards.find(c => c.id === cardId);
+                if (!card) return;
+                const task = card.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.status = 'pending';
+                    task.completed = false;
+                    task.helpers.forEach(h => { h.completed = false; h.evidence = ''; });
+                    saveData();
+                    renderAll();
+                }
+            });
+        }
+
+        function deleteProject(projectId) {
+            confirmDelete('Eliminar proyecto', 'Se eliminarán todos los procesos, tareas y datos asociados.', function() {
+                data.projects = data.projects.filter(p => p.id !== projectId);
+                if (selectedProjectId === projectId) selectedProjectId = data.projects.length > 0 ? data.projects[0].id : null;
+                saveData();
+                renderAll();
+            });
+        }
+
+        function deleteCard(projectId, cardId) {
+            confirmDelete('Eliminar proceso', 'Se eliminarán todas las tareas y datos asociados.', function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (project) { project.cards = project.cards.filter(c => c.id !== cardId); saveData(); renderAll(); }
+            });
+        }
+
+        function deleteTask(projectId, cardId, taskId) {
+            confirmDelete('Eliminar tarea', 'Se eliminarán subtareas, notas y asignaciones.', function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (project) {
+                    const card = project.cards.find(c => c.id === cardId);
+                    if (card) { card.tasks = card.tasks.filter(t => t.id !== taskId); saveData(); renderAll(); }
+                }
+            });
+        }
+
+        function deleteSubtask(projectId, cardId, taskId, subtaskName) {
+            confirmDelete('Eliminar subtarea', `Se eliminará "${subtaskName}"`, function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (project) {
+                    const card = project.cards.find(c => c.id === cardId);
+                    if (card) {
+                        const task = card.tasks.find(t => t.id === taskId);
+                        if (task) { task.subtasks = task.subtasks.filter(s => s.name !== subtaskName); saveData(); renderAll(); }
+                    }
+                }
+            });
+        }
+
+        function deleteNote(projectId, cardId, taskId, noteAuthor, noteText) {
+            confirmDelete('Eliminar nota', `Se eliminará: "${noteText}"`, function() {
+                const project = data.projects.find(p => p.id === projectId);
+                if (project) {
+                    const card = project.cards.find(c => c.id === cardId);
+                    if (card) {
+                        const task = card.tasks.find(t => t.id === taskId);
+                        if (task) { task.notes = task.notes.filter(n => !(n.author === noteAuthor && n.text === noteText)); saveData(); renderAll(); }
+                    }
+                }
+            });
+        }
+
+        function addGlobalStudent() {
+            openModal('Agregar Estudiante', `
+                <label>Nombre</label><input id="inputStudentName" placeholder="Nombre completo" value="Estudiante ${data.students.length+1}">
+                <label>Correo</label><input id="inputStudentEmail" placeholder="email@ejemplo.com" value="estudiante${data.students.length+1}@demo.com">
+            `, function() {
+                const name = document.getElementById('inputStudentName').value.trim();
+                const email = document.getElementById('inputStudentEmail').value.trim();
+                if (name) { data.students.push({ id: 's'+Date.now(), name, email: email || `${name}@demo.com` }); saveData(); renderAll(); }
+            });
+        }
+
+        function resetDemo() {
+            confirmDelete('Restaurar demo', 'Se perderán todos los datos actuales.', function() {
+                localStorage.removeItem(STORAGE_KEY);
+                collapsed = {};
+                selectedProjectId = null;
+                if (miniChartInstance) { miniChartInstance.destroy(); miniChartInstance = null; }
+                loadData();
+            });
+        }
+
+        // ===== RENDER PROJECTS =====
+        function renderProjects() {
+            const container = document.getElementById('projectList');
+            if (!data.projects.length) {
+                container.innerHTML = `<div class="panel text-muted" style="text-align:center; padding:1.5rem;">✨ No hay proyectos. Crea uno nuevo.</div>`;
+                return;
+            }
+            let projectToShow = null;
+            if (selectedProjectId) projectToShow = data.projects.find(p => p.id === selectedProjectId);
+            if (!projectToShow && data.projects.length > 0) { projectToShow = data.projects[0]; selectedProjectId = projectToShow.id; }
+            if (!projectToShow) { container.innerHTML = `<div class="panel text-muted" style="text-align:center; padding:1.5rem;">Selecciona un proyecto</div>`; return; }
+
+            const project = projectToShow;
+            const projectDone = isProjectCompleted(project);
+            const progress = getProjectProgress(project);
+            const projId = `proj-${project.id}`;
+            const isProjCollapsed = collapsed[projId] || false;
+
+            let html = `<div class="panel">
+                <div class="panel-header">
+                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                        <button class="btn-collapse" data-action="toggleCollapse" data-id="${projId}">${isProjCollapsed ? '▶' : '▼'}</button>
+                        <span style="font-weight:500; color:#d4d4d4;">📁 ${project.name}</span>
+                        <button class="btn-chart" data-action="openChart" data-project-id="${project.id}" title="Ver gráfico de avance">📊</button>
+                        <span class="project-status ${projectDone ? 'done' : 'pending'}">${projectDone ? '✅ Completado' : '⏳ En progreso'}</span>
+                        <span class="stats-badge">
+                            👥 ${progress.total} · <strong>${progress.percent}%</strong>
+                            <span class="progress-bar-container"><span class="progress-bar-fill" style="width:${progress.percent}%;"></span></span>
+                        </span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
+                        ${project.admin ? `<span class="admin-badge">Admin: ${project.admin}</span>` : ''}
+                        <button class="btn btn-outline btn-sm" data-action="addCard" data-project-id="${project.id}">➕ Proceso</button>
+                        <button class="btn btn-outline btn-sm" data-action="editProject" data-project-id="${project.id}">✏️</button>
+                        <button class="btn btn-danger btn-sm" data-action="deleteProject" data-project-id="${project.id}">🗑️</button>
+                    </div>
+                </div>
+                <div class="tree ${isProjCollapsed ? 'collapsed' : ''}">`;
+
+            project.cards.forEach((card, cIdx) => {
+                const isLastCard = cIdx === project.cards.length - 1;
+                const cardPrefix = isLastCard ? '└── ' : '├── ';
+                const cardId = `card-${project.id}-${card.id}`;
+                const isCardCollapsed = collapsed[cardId] || false;
+                const overdue = isDateOverdue(card.dueDate);
+                html += `<div class="tree-node">
+                    <span class="tree-indent">${cardPrefix}</span>
+                    <button class="btn-collapse" data-action="toggleCollapse" data-id="${cardId}">${isCardCollapsed ? '▶' : '▼'}</button>
+                    <span class="tree-icon">📖</span>
+                    <span class="label">${card.name}</span>
+                    <span class="card-desc">${card.description || ''}</span>
+                    ${card.assignedTo ? `<span class="assigned-to">👤 ${card.assignedTo}</span>` : ''}
+                    ${card.dueDate ? `<span class="due-date ${overdue ? 'overdue' : ''}">⏰ ${formatDate(card.dueDate)}${overdue ? ' (Vencido)' : ''}</span>` : ''}
+                    <span class="tree-actions">
+                        <button class="btn btn-outline btn-sm" data-action="addTask" data-project-id="${project.id}" data-card-id="${card.id}">+ tarea</button>
+                        <button class="btn btn-outline btn-sm" data-action="editCard" data-project-id="${project.id}" data-card-id="${card.id}">✏️</button>
+                        <button class="btn btn-danger btn-sm" data-action="deleteCard" data-project-id="${project.id}" data-card-id="${card.id}">✕</button>
+                    </span>
+                </div>`;
+
+                if (card.tasks.length) {
+                    html += `<div class="tree-children ${isCardCollapsed ? 'collapsed' : ''}">`;
+                    card.tasks.forEach((task, tIdx) => {
+                        const isLastTask = tIdx === card.tasks.length - 1;
+                        const taskPrefix = isLastTask ? '└── ' : '├── ';
+                        const taskId = `task-${project.id}-${card.id}-${task.id}`;
+                        const isTaskCollapsed = collapsed[taskId] || false;
+                        const statusLabels = { 'pending': 'Pendiente', 'in-progress': 'En proceso', 'done': 'Finalizada' };
+                        const statusClass = { 'pending': 'pending', 'in-progress': 'in-progress', 'done': 'done' };
+                        html += `<div class="tree-item">
+                            <span class="tree-indent">${taskPrefix}</span>
+                            <button class="btn-collapse" data-action="toggleCollapse" data-id="${taskId}">${isTaskCollapsed ? '▶' : '▼'}</button>
+                            <span class="tree-icon">📋</span>
+                            <span class="label">${task.name}</span>
+                            <span class="tag">👨‍🏫 ${task.leader.name}</span>
+                            ${task.assignedStudent ? `<span class="student-badge">→ ${task.assignedStudent}</span>` : ''}
+                            <span class="task-status ${statusClass[task.status] || 'pending'}">${statusLabels[task.status] || 'Pendiente'}</span>
+                            ${task.completed ? '<span class="completed-badge">✅ Completada</span>' : ''}
+                            <span class="tree-actions">
+                                <button class="btn btn-outline btn-sm" data-action="addSubtask" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">+ subtarea</button>
+                                <button class="btn btn-outline btn-sm" data-action="addHelper" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">+ estudiante</button>
+                                <button class="btn btn-outline btn-sm" data-action="editTask" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">✏️</button>
+                                <button class="btn btn-danger btn-sm" data-action="deleteTask" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">✕</button>
+                            </span>
+                        </div>`;
+
+                        html += `<div class="tree-children ${isTaskCollapsed ? 'collapsed' : ''}" style="margin-left:2.5rem;">`;
+                        // Subtareas
+                        if (task.subtasks && task.subtasks.length) {
+                            task.subtasks.forEach((st, stIdx) => {
+                                const isLastSt = stIdx === task.subtasks.length - 1;
+                                const stPrefix = isLastSt ? '└── ' : '├── ';
+                                html += `<div class="tree-item subtask-item">
+                                    <span class="tree-indent">${stPrefix}</span>
+                                    <span style="font-size:0.75rem;">${st.name}</span>
+                                    <span class="tag" style="background:#2d2d3d; color:#9cdcfe;">${st.status}</span>
+                                    <span class="student-badge">→ ${st.assignedTo}</span>
+                                    <span class="delete-btn" data-action="deleteSubtask" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-subtask-name="${st.name}">✕</span>
+                                </div>`;
+                            });
+                        }
+                        // Estudiantes ayudantes
+                        if (task.helpers && task.helpers.length) {
+                            task.helpers.forEach((h, hIdx) => {
+                                const isLastH = hIdx === task.helpers.length - 1;
+                                const hPrefix = isLastH ? '└── ' : '├── ';
+                                const studentNotes = task.notes ? task.notes.filter(n => n.author === h.name) : [];
+                                const helperCompleted = h.completed || false;
+                                html += `<div class="tree-item">
+                                    <span class="tree-indent">${hPrefix}</span>
+                                    <span class="student-badge">👤 ${h.name}</span>
+                                    ${helperCompleted ? `<span class="completed-badge">✅ Terminó</span>` : ''}
+                                    ${h.evidence ? `<a href="${h.evidence}" target="_blank" class="evidence-link">🔗 Evidencia</a>` : ''}
+                                    <span class="tree-actions">
+                                        <button class="btn btn-outline btn-sm" data-action="addStudentNote" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-student-name="${h.name}">➕ nota</button>
+                                        ${!helperCompleted ? `<button class="btn btn-success btn-sm" data-action="markHelperDone" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-student-name="${h.name}">✅ completar</button>` :
+                                        `<button class="btn btn-danger btn-sm" data-action="unmarkHelperDone" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-student-name="${h.name}">↩️ deshacer</button>`}
+                                    </span>
+                                </div>`;
+                                if (studentNotes.length) {
+                                    html += `<div style="margin-left:3.5rem;">`;
+                                    studentNotes.forEach((note, nIdx) => {
+                                        const isLastNote = nIdx === studentNotes.length - 1;
+                                        const notePrefix = isLastNote ? '└── ' : '├── ';
+                                        html += `<div class="tree-item note-item">
+                                            <span class="tree-indent">${notePrefix}</span>
+                                            <span class="note-item">📝 ${note.text}</span>
+                                            <span class="delete-btn" data-action="deleteNote" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-note-author="${note.author}" data-note-text="${note.text}">✕</span>
+                                        </div>`;
+                                    });
+                                    html += `</div>`;
+                                }
+                            });
+                        }
+                        // Notas generales
+                        const generalNotes = task.notes ? task.notes.filter(n => !n.author || !task.helpers.some(h => h.name === n.author)) : [];
+                        if (generalNotes.length) {
+                            generalNotes.forEach((note, nIdx) => {
+                                const isLastNote = nIdx === generalNotes.length - 1;
+                                const notePrefix = isLastNote ? '└── ' : '├── ';
+                                html += `<div class="tree-item note-item">
+                                    <span class="tree-indent">${notePrefix}</span>
+                                    <span class="note-item">📝 ${note.text}</span>
+                                    <span class="delete-btn" data-action="deleteNote" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-note-author="${note.author || 'general'}" data-note-text="${note.text}">✕</span>
+                                </div>`;
+                            });
+                        }
+                        // Botón marcar tarea completa
+                        const allHelpersDone = task.helpers.every(h => h.completed);
+                        if (allHelpersDone && task.helpers.length > 0 && !task.completed) {
+                            html += `<div style="padding:0.1rem 0;">
+                                <button class="btn btn-success btn-sm" data-action="markTaskDone" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">✅ Marcar tarea completada</button>
+                            </div>`;
+                        }
+                        if (task.completed) {
+                            html += `<div style="padding:0.1rem 0;">
+                                <button class="btn btn-danger btn-sm" data-action="unmarkTaskDone" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}">↩️ Desmarcar tarea</button>
+                            </div>`;
+                        }
+                        html += `</div>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            html += `</div></div>`;
+            container.innerHTML = html;
+
+            container.querySelectorAll('[data-action]').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const action = this.dataset.action;
+                    const projectId = this.dataset.projectId;
+                    const cardId = this.dataset.cardId;
+                    const taskId = this.dataset.taskId;
+                    const studentName = this.dataset.studentName;
+                    const id = this.dataset.id;
+                    const subtaskName = this.dataset.subtaskName;
+                    const noteAuthor = this.dataset.noteAuthor;
+                    const noteText = this.dataset.noteText;
+                    if (action === 'toggleCollapse') { toggleCollapse(id); return; }
+                    if (action === 'openChart') { openChart(projectId); return; }
+                    if (action === 'addCard') openAddCard(projectId);
+                    else if (action === 'editCard') openEditCard(projectId, cardId);
+                    else if (action === 'editProject') openEditProject(projectId);
+                    else if (action === 'addTask') openAddTask(projectId, cardId);
+                    else if (action === 'editTask') openEditTask(projectId, cardId, taskId);
+                    else if (action === 'addSubtask') openAddSubtask(projectId, cardId, taskId);
+                    else if (action === 'addHelper') openAddHelper(projectId, cardId, taskId);
+                    else if (action === 'addStudentNote') openAddStudentNote(projectId, cardId, taskId, studentName);
+                    else if (action === 'markHelperDone') markHelperDone(projectId, cardId, taskId, studentName);
+                    else if (action === 'unmarkHelperDone') unmarkHelperDone(projectId, cardId, taskId, studentName);
+                    else if (action === 'markTaskDone') markTaskDone(projectId, cardId, taskId);
+                    else if (action === 'unmarkTaskDone') unmarkTaskDone(projectId, cardId, taskId);
+                    else if (action === 'deleteProject') deleteProject(projectId);
+                    else if (action === 'deleteCard') deleteCard(projectId, cardId);
+                    else if (action === 'deleteTask') deleteTask(projectId, cardId, taskId);
+                    else if (action === 'deleteSubtask') deleteSubtask(projectId, cardId, taskId, subtaskName);
+                    else if (action === 'deleteNote') deleteNote(projectId, cardId, taskId, noteAuthor, noteText);
+                });
+            });
+        }
+
+        function toggleCollapse(id) {
+            collapsed[id] = !collapsed[id];
+            renderAll();
+        }
+
+        // ===== EVENTOS =====
+        document.getElementById('newProjectBtn').addEventListener('click', openAddProject);
+        document.getElementById('newProjectBtnSidebar').addEventListener('click', openAddProject);
+        document.getElementById('addStudentBtn').addEventListener('click', addGlobalStudent);
+        document.getElementById('addStudentBtnSidebar').addEventListener('click', addGlobalStudent);
+        document.getElementById('resetDataBtn').addEventListener('click', resetDemo);
+        document.getElementById('resetDataBtnSidebar').addEventListener('click', resetDemo);
+        document.getElementById('chartModalClose').addEventListener('click', closeChart);
+        document.getElementById('modalContainer').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.getElementById('chartModalContainer').addEventListener('click', function(e) { if (e.target === this) closeChart(); });
+
+        loadData();
+    })();
+</script>
+</body>
+</html>

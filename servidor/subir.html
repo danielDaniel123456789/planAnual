@@ -2,39 +2,218 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Prueba de endpoints</title>
-    <style>/* (mismo estilo que antes) */</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir respaldo JSON al servidor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 { color: #89b4fa; display: flex; align-items: center; gap: 10px; }
+        h1 small { font-size: 14px; font-weight: normal; color: #a6adc8; }
+        .card {
+            background: #313244;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            border: 1px solid #45475a;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #f9e2af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+        }
+        .card h2 i { font-size: 22px; }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .row label {
+            min-width: 100px;
+            font-weight: 500;
+            color: #a6adc8;
+        }
+        input[type="email"],
+        input[type="file"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #45475a;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            font-size: 14px;
+        }
+        input[type="file"]::file-selector-button {
+            background: #45475a;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            color: #cdd6f4;
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background: #585b70;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #45475a;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-top: 8px;
+        }
+        button {
+            background: #89b4fa;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #1e1e2f;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #b4cffa; }
+        button.danger { background: #f38ba8; }
+        button.danger:hover { background: #f5a3bb; }
+        button.success { background: #a6e3a1; }
+        button.success:hover { background: #b8f0b3; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .respuesta {
+            background: #1e1e2f;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 4px solid #89b4fa;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 13px;
+            max-height: 300px;
+            overflow: auto;
+            margin-top: 12px;
+            font-family: 'Courier New', monospace;
+        }
+        .respuesta.success { border-left-color: #a6e3a1; }
+        .respuesta.error { border-left-color: #f38ba8; }
+        .file-info {
+            font-size: 12px;
+            color: #a6adc8;
+            margin-top: 4px;
+        }
+        .badge {
+            background: #45475a;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #cdd6f4;
+        }
+        .flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .mt-8 { margin-top: 8px; }
+    </style>
 </head>
 <body>
-    <h1>🧪 Prueba de subida al servidor</h1>
 
-    <!-- GET -->
+    <h1>
+        📤 Subir respaldo JSON al servidor
+        <small>— Prueba de endpoints</small>
+    </h1>
+
+    <!-- ======================================== -->
+    <!-- SECCIÓN CONSULTAR CORREO (GET) -->
+    <!-- ======================================== -->
     <div class="card">
-        <h2>🔍 GET – Consultar correo</h2>
-        <input type="email" id="get-correo" value="test@ejemplo.com">
-        <button onclick="consultarCorreo()">Consultar</button>
-        <button onclick="limpiar('get-respuesta')">Limpiar</button>
+        <h2><span style="color:#89b4fa;">🔍</span> Consultar correo (GET)</h2>
+        <div class="row">
+            <label for="get-correo">Correo:</label>
+            <input type="email" id="get-correo" value="test@ejemplo.com">
+            <button onclick="consultarCorreo()">Consultar</button>
+            <button class="danger" onclick="limpiar('get-respuesta')">Limpiar</button>
+        </div>
         <div id="get-respuesta" class="respuesta">Esperando consulta...</div>
     </div>
 
-    <!-- POST -->
+    <!-- ======================================== -->
+    <!-- SECCIÓN SUBIR ARCHIVO JSON (POST) -->
+    <!-- ======================================== -->
     <div class="card">
-        <h2>📤 POST – Actualizar respaldo</h2>
-        <input type="email" id="post-correo" value="test@ejemplo.com">
-        <textarea id="post-json">{"prueba":"post"}</textarea>
-        <button onclick="subirPost()">Subir</button>
-        <button onclick="limpiar('post-respuesta')">Limpiar</button>
+        <h2><span style="color:#a6e3a1;">📤</span> Subir archivo JSON (POST)</h2>
+
+        <div class="row">
+            <label for="post-correo">Correo:</label>
+            <input type="email" id="post-correo" value="test@ejemplo.com" placeholder="ejemplo@correo.com">
+        </div>
+
+        <div class="row">
+            <label for="json-file">Archivo JSON:</label>
+            <input type="file" id="json-file" accept=".json" onchange="previsualizarJSON(event)">
+        </div>
+
+        <div id="file-info" class="file-info">📄 Ningún archivo seleccionado.</div>
+
+        <div class="flex mt-8">
+            <button class="success" onclick="subirArchivo()">
+                <span>⬆️</span> Subir archivo
+            </button>
+            <button onclick="limpiar('post-respuesta')" class="danger">Limpiar respuesta</button>
+            <span class="badge" id="tamano-json">0 bytes</span>
+        </div>
+
+        <!-- Área de previsualización (opcional) -->
+        <details style="margin-top: 12px;">
+            <summary style="cursor:pointer; color:#a6adc8; font-size:13px;">📝 Ver contenido del JSON</summary>
+            <textarea id="preview-json" readonly placeholder="El contenido del archivo aparecerá aquí..." rows="6"></textarea>
+        </details>
+
         <div id="post-respuesta" class="respuesta">Esperando acción...</div>
     </div>
 
+    <!-- ======================================== -->
+    <!-- SCRIPTS -->
+    <!-- ======================================== -->
     <script>
         const BASE = 'https://educr.app/databaseJSON/';
         const API_KEY = 'miClaveSuperSecreta123';
 
+        // --- Elementos DOM ---
+        const getCorreoInput = document.getElementById('get-correo');
+        const postCorreoInput = document.getElementById('post-correo');
+        const fileInput = document.getElementById('json-file');
+        const previewTextarea = document.getElementById('preview-json');
+        const fileInfo = document.getElementById('file-info');
+        const tamanoSpan = document.getElementById('tamano-json');
+
+        let jsonContent = null; // Guarda el contenido del JSON cargado
+
+        // ============================================
+        // 1. CONSULTAR CORREO (GET)
+        // ============================================
         async function consultarCorreo() {
-            const correo = document.getElementById('get-correo').value.trim();
+            const correo = getCorreoInput.value.trim();
             const cont = document.getElementById('get-respuesta');
-            if (!correo) { cont.className = 'respuesta error'; cont.textContent = '❌ Ingresa un correo.'; return; }
+            if (!correo) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Ingresa un correo.';
+                return;
+            }
 
             const url = `${BASE}consultar.php?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
             cont.className = 'respuesta';
@@ -50,27 +229,80 @@
                 cont.textContent = `🔍 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
             } catch (e) {
                 cont.className = 'respuesta error';
-                cont.textContent = `❌ Error de conexión: ${e.message}\n\nPosibles causas:\n- CORS bloqueado (usa Live Server)\n- URL incorrecta\n- El servidor no responde`;
+                cont.textContent = `❌ Error de conexión: ${e.message}`;
                 console.error('Fetch error:', e);
             }
         }
 
-        async function subirPost() {
-            const correo = document.getElementById('post-correo').value.trim();
-            const jsonRaw = document.getElementById('post-json').value.trim();
+        // ============================================
+        // 2. PREVISUALIZAR JSON AL SELECCIONAR ARCHIVO
+        // ============================================
+        function previsualizarJSON(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                jsonContent = null;
+                previewTextarea.value = '';
+                fileInfo.textContent = '📄 Ningún archivo seleccionado.';
+                tamanoSpan.textContent = '0 bytes';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const texto = e.target.result;
+                    // Validar que sea JSON válido
+                    const parsed = JSON.parse(texto);
+                    jsonContent = texto; // Guardamos el string
+                    previewTextarea.value = JSON.stringify(parsed, null, 2);
+                    const size = new Blob([texto]).size;
+                    fileInfo.textContent = `📄 Archivo: ${file.name} (${(size / 1024).toFixed(1)} KB)`;
+                    tamanoSpan.textContent = `${size} bytes`;
+                } catch (err) {
+                    jsonContent = null;
+                    previewTextarea.value = '❌ El archivo no es un JSON válido.';
+                    fileInfo.textContent = `⚠️ Error: ${err.message}`;
+                    tamanoSpan.textContent = '0 bytes';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================
+        // 3. SUBIR ARCHIVO (POST)
+        // ============================================
+        async function subirArchivo() {
+            const correo = postCorreoInput.value.trim();
             const cont = document.getElementById('post-respuesta');
 
-            if (!correo) { cont.className = 'respuesta error'; cont.textContent = '❌ Correo obligatorio.'; return; }
-            if (!jsonRaw) { cont.className = 'respuesta error'; cont.textContent = '❌ JSON vacío.'; return; }
+            // Validar correo
+            if (!correo) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Correo obligatorio.';
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Correo electrónico inválido.';
+                return;
+            }
 
+            // Validar que haya un JSON cargado
+            if (!jsonContent) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ No hay un archivo JSON válido seleccionado.';
+                return;
+            }
+
+            // Mostrar estado de carga
             cont.className = 'respuesta';
-            cont.textContent = '⏳ Enviando...';
+            cont.textContent = '⏳ Subiendo archivo al servidor...';
 
             try {
                 const form = new URLSearchParams();
                 form.append('api_key', API_KEY);
                 form.append('correo', correo);
-                form.append('json', jsonRaw);
+                form.append('json', jsonContent);
                 form.append('version', '1.0');
 
                 const res = await fetch(`${BASE}insert.php`, {
@@ -85,18 +317,36 @@
 
                 cont.className = res.ok ? 'respuesta success' : 'respuesta error';
                 cont.textContent = `📤 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
+
+                // Si el servidor devuelve 404, sugerir registrar el correo
+                if (res.status === 404) {
+                    cont.textContent += '\n\n💡 El correo no está registrado. Usa "Registrar correo" primero.';
+                }
+
             } catch (e) {
                 cont.className = 'respuesta error';
-                cont.textContent = `❌ Error de conexión: ${e.message}\n\nPosibles causas:\n- CORS bloqueado\n- URL incorrecta\n- El servidor no responde`;
+                cont.textContent = `❌ Error de conexión: ${e.message}`;
                 console.error('Fetch error:', e);
             }
         }
 
+        // ============================================
+        // 4. LIMPIAR RESPUESTA
+        // ============================================
         function limpiar(id) {
             const el = document.getElementById(id);
             el.className = 'respuesta';
             el.textContent = 'Esperando acción...';
         }
+
+        // ============================================
+        // 5. REGISTRAR CORREO (opcional)
+        // ============================================
+        // Puedes añadir un botón que llame a registrarCorreoManual() si tienes esa función.
+        // Por ahora lo dejamos así.
+
+        console.log('✅ HTML de prueba listo. Sube tu JSON con correo.');
     </script>
+
 </body>
 </html>

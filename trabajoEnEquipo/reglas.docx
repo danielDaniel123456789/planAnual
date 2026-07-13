@@ -1,0 +1,213 @@
+Reglas del Diseño — Plan Anual Inteligente 2026
+1. Diseño General
+
+
+
+
+2. Encabezado Principal
+El header debe incluir:
+
+Nombre del sistema:
+
+Plan Anual Inteligente 2026
+Subtítulo descriptivo.
+
+Badge flotante de:
+
+Guardado automático activo
+Fondo degradado azul institucional.
+Iconos FontAwesome modernos.
+Texto blanco con contraste alto.
+3. Formularios
+Estilo de inputs
+Inputs redondeados.
+Bordes suaves.
+Animación focus.
+Padding amplio.
+Tipografía clara.
+Labels pequeñas pero fuertes.
+Reglas funcionales
+Guardado automático en localStorage.
+No perder información al actualizar.
+Mantener datos al modificar.
+Validar campos importantes.
+Navegación por pasos (step wizard).
+4. Navegación por pasos
+Cada paso debe:
+Tener transición suave.
+Solo mostrar un formulario a la vez.
+Mantener el progreso.
+Permitir volver atrás sin perder datos.
+Orden:
+Datos institucionales.
+Unidad 1.
+Unidad 2.
+Unidad 3.
+Generar plan.
+5. Diseño de unidades
+Cada unidad debe verse como:
+Card independiente.
+Fondo blanco.
+Sombra ligera.
+Título grande.
+Inputs organizados en grid.
+Debe incluir:
+Nombre unidad.
+Horas.
+Lista de temas.
+Botón agregar tema.
+Botón eliminar tema.
+6. Tabla del Plan Anual
+Estilo general
+Tabla profesional tipo Excel moderno.
+Sin scroll horizontal excesivo.
+Bordes finos.
+Compacta.
+Optimizada para impresión PDF.
+7. Encabezados de tabla
+Primera fila
+Meses agrupados.
+Fondo amarillo estilo cronograma.
+Texto oscuro.
+Cada mes ocupa sus semanas.
+
+Ejemplo:
+
+FEBRERO
+Segunda fila
+Semanas del mes:
+1 2 3 4
+Reinicio automático cada mes.
+Fondo amarillo claro.
+8. Regla principal de semanas
+Cada mes:
+Debe tener semanas:
+1 2 3 4
+Si inicia en semana 3:
+
+Debe verse:
+
+1 | 2 | 3 | 4
+
+pero:
+
+Semana 1 y 2 vacías.
+Sin color.
+Sin contenido.
+Manteniendo la celda visible.
+9. Distribución académica
+Las unidades:
+Se distribuyen automáticamente.
+Solo usan semanas activas.
+Ignoran vacaciones.
+Ignoran Semana Santa.
+Temas:
+Se pintan automáticamente.
+Heredan color de unidad.
+Distribución proporcional.
+10. Colores
+Reglas
+
+Cada unidad usa color diferente:
+
+Azul.
+Naranja.
+Verde.
+Morado.
+Rosa.
+Turquesa.
+Intensidad
+Unidad → color suave.
+Tema → color más fuerte.
+11. Vacaciones
+Vacaciones de medio año
+
+Color:
+
+Beige claro
+
+Icono:
+
+🏖️
+Semana Santa
+
+Color:
+
+Azul pastel
+
+Icono:
+
+✝️
+12. Celdas vacías
+Reglas
+
+Las semanas no activas:
+
+Fondo blanco.
+Sin íconos.
+Sin colores.
+Mantener estructura visual.
+13. Distribución visual
+Tabla
+Compacta.
+Legible.
+Profesional.
+Similar a cronogramas MEP reales.
+Texto
+Muy pequeño pero claro.
+Optimizado para PDF horizontal.
+14. Impresión PDF
+Reglas
+Horizontal (landscape).
+Márgenes pequeños.
+Mantener colores.
+Ocultar botones.
+Mantener diseño profesional.
+15. Responsive
+En celular:
+Formularios en una columna.
+Tabla adaptable.
+Botones grandes.
+Inputs táctiles.
+16. Persistencia de datos
+Todo debe guardarse:
+Datos institucionales.
+Unidades.
+Temas.
+Horas.
+Semana inicio.
+Cantidad unidades.
+Usando:
+localStorage
+17. Experiencia visual
+El sistema debe sentirse:
+Profesional.
+Moderno.
+Inteligente.
+Similar a software premium.
+Fácil de usar.
+Visualmente limpio.
+18. Regla de estabilidad
+
+Nunca debe:
+
+Borrar datos al modificar.
+Romper semanas.
+Duplicar temas.
+Desordenar meses.
+Mover semanas incorrectamente.
+19. Filosofía del diseño
+
+El sistema debe parecer:
+
+Una mezcla entre:
+
+- Excel profesional
+- Notion
+- Google Classroom
+- Dashboard empresarial moderno
+- Cronograma académico MEP
+
+con enfoque:
+
+Minimalista + profesional + rápido

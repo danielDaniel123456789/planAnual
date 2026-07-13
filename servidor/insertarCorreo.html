@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar correo en servidor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #89b4fa; }
+        .card {
+            background: #313244;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #45475a;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #f9e2af;
+            font-size: 20px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        input[type="email"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #45475a;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            font-size: 14px;
+        }
+        button {
+            background: #89b4fa;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #1e1e2f;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #b4cffa; }
+        button.success { background: #a6e3a1; }
+        button.success:hover { background: #b8f0b3; }
+        button.danger { background: #f38ba8; }
+        button.danger:hover { background: #f5a3bb; }
+        .respuesta {
+            background: #1e1e2f;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 4px solid #89b4fa;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 13px;
+            max-height: 200px;
+            overflow: auto;
+            margin-top: 12px;
+            font-family: 'Courier New', monospace;
+        }
+        .respuesta.success { border-left-color: #a6e3a1; }
+        .respuesta.error { border-left-color: #f38ba8; }
+        .badge {
+            background: #45475a;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .mt-8 { margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <h1>📧 Registrar correo en el servidor</h1>
+
+    <!-- Sección Registrar -->
+    <div class="card">
+        <h2>📝 Registrar nuevo correo</h2>
+        <div class="row">
+            <input type="email" id="registrar-correo" value="test@ejemplo.com" placeholder="ejemplo@correo.com">
+            <button class="success" onclick="registrarCorreo()">Registrar</button>
+        </div>
+        <div id="registrar-respuesta" class="respuesta">Esperando acción...</div>
+    </div>
+
+    <!-- Sección Consultar (opcional) -->
+    <div class="card">
+        <h2>🔍 Consultar si existe</h2>
+        <div class="row">
+            <input type="email" id="consultar-correo" value="test@ejemplo.com" placeholder="ejemplo@correo.com">
+            <button onclick="consultarCorreo()">Consultar</button>
+            <button class="danger" onclick="limpiar('consultar-respuesta')">Limpiar</button>
+        </div>
+        <div id="consultar-respuesta" class="respuesta">Esperando consulta...</div>
+    </div>
+
+    <script>
+        const BASE = 'https://educr.app/databaseJSON/';
+        const API_KEY = 'miClaveSuperSecreta123';
+
+        // Registrar correo
+        async function registrarCorreo() {
+            const correo = document.getElementById('registrar-correo').value.trim();
+            const cont = document.getElementById('registrar-respuesta');
+
+            if (!correo) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Ingresa un correo.';
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Correo electrónico inválido.';
+                return;
+            }
+
+            cont.className = 'respuesta';
+            cont.textContent = '⏳ Registrando...';
+
+            try {
+                const form = new URLSearchParams();
+                form.append('api_key', API_KEY);
+                form.append('correo', correo);
+
+                const res = await fetch(`${BASE}registrar_correo.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: form
+                });
+
+                const texto = await res.text();
+                let json;
+                try { json = JSON.parse(texto); } catch { json = { raw: texto }; }
+
+                cont.className = res.ok ? 'respuesta success' : 'respuesta error';
+
+                if (res.status === 409) {
+                    cont.textContent = `⚠️ El correo ya está registrado.\n${JSON.stringify(json, null, 2)}`;
+                } else {
+                    cont.textContent = `${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
+                }
+            } catch (e) {
+                cont.className = 'respuesta error';
+                cont.textContent = `❌ Error de conexión: ${e.message}`;
+                console.error('Fetch error:', e);
+            }
+        }
+
+        // Consultar correo
+        async function consultarCorreo() {
+            const correo = document.getElementById('consultar-correo').value.trim();
+            const cont = document.getElementById('consultar-respuesta');
+
+            if (!correo) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Ingresa un correo.';
+                return;
+            }
+
+            const url = `${BASE}consultar.php?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
+            cont.className = 'respuesta';
+            cont.textContent = '⏳ Consultando...';
+
+            try {
+                const res = await fetch(url);
+                const texto = await res.text();
+                let json;
+                try { json = JSON.parse(texto); } catch { json = { raw: texto }; }
+
+                cont.className = res.ok ? 'respuesta success' : 'respuesta error';
+                cont.textContent = `🔍 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
+            } catch (e) {
+                cont.className = 'respuesta error';
+                cont.textContent = `❌ Error de conexión: ${e.message}`;
+                console.error('Fetch error:', e);
+            }
+        }
+
+        function limpiar(id) {
+            const el = document.getElementById(id);
+            el.className = 'respuesta';
+            el.textContent = 'Esperando acción...';
+        }
+
+        console.log('✅ HTML de registro de correo listo.');
+    </script>
+</body>
+</html>

@@ -138,7 +138,7 @@ class BaseApp {
     }
 
     async init() {
-        console.log('🚀 Iniciando App...');
+        console.log(' Iniciando App...');
         await this.db.init();
         this.config.load();
         this.applyTheme();

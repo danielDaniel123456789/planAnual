@@ -55,7 +55,7 @@
 <script src="./assets/js/constructor/eliminarDataBase.js"></script>
     <script src="./assets/js/constructor/profesor.js"></script>
     <script src="./assets/js/constructor/descargarPDFEstudiante.js"></script>
-    
+    <script src="./assets/js/constructor/descargarCVC_Estudiantes.js"></script>
     <!-- APP PRINCIPAL -->
     <script src="./assets/js/constructor/constructor.js"></script>
 
@@ -195,7 +195,7 @@
                                                 📊 Porcentaje disponible: <strong style="color:#f9e2af;">${restante}%</strong>
                                             </span>
                                         </div>
-                                        <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                                        <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                                         <input id="swal-nombre" class="swal2-input" placeholder="Nombre del rubro">
                                         <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
                                         <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" value="${Math.min(25, restante)}">

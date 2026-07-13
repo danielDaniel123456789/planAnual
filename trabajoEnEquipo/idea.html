@@ -313,7 +313,7 @@
     <div class="main-content">
         <div class="main-header">
             <div class="main-header-left">
-                <h1 id="mainTitle">📋 TaskFlow</h1>
+                <h1 id="mainTitle"> TaskFlow</h1>
                 <div id="miniChartContainer" class="mini-chart-container hidden">
                     <canvas id="miniChart"></canvas>
                     <span class="mini-chart-label" id="miniChartLabel"><strong>0%</strong></span>
@@ -339,7 +339,7 @@
                     <button class="btn btn-outline btn-sm" id="resetDataBtn">♻️ Reiniciar demo</button>
                 </div>
                 <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:0.2rem; align-items:center;">
-                    <span class="text-muted" style="font-size:0.65rem;">📋 Estudiantes:</span>
+                    <span class="text-muted" style="font-size:0.65rem;"> Estudiantes:</span>
                     <div id="studentList" style="display:flex; flex-wrap:wrap; gap:0.15rem;"></div>
                 </div>
             </div>
@@ -552,9 +552,9 @@
             const title = document.getElementById('mainTitle');
             if (selectedProjectId) {
                 const project = data.projects.find(p => p.id === selectedProjectId);
-                if (project) { title.textContent = `📋 ${project.name}`; return; }
+                if (project) { title.textContent = ` ${project.name}`; return; }
             }
-            title.textContent = '📋 TaskFlow';
+            title.textContent = ' TaskFlow';
         }
 
         function updateMiniChart() {
@@ -1277,7 +1277,7 @@
                         html += `<div class="tree-item">
                             <span class="tree-indent">${taskPrefix}</span>
                             <button class="btn-collapse" data-action="toggleCollapse" data-id="${taskId}">${isTaskCollapsed ? '▶' : '▼'}</button>
-                            <span class="tree-icon">📋</span>
+                            <span class="tree-icon"></span>
                             <span class="label">${task.name}</span>
                             <span class="tag">👨‍🏫 ${task.leader.name}</span>
                             ${task.assignedStudent ? `<span class="student-badge">→ ${task.assignedStudent}</span>` : ''}
@@ -1331,7 +1331,7 @@
                                         const notePrefix = isLastNote ? '└── ' : '├── ';
                                         html += `<div class="tree-item note-item">
                                             <span class="tree-indent">${notePrefix}</span>
-                                            <span class="note-item">📝 ${note.text}</span>
+                                            <span class="note-item"> ${note.text}</span>
                                             <span class="delete-btn" data-action="deleteNote" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-note-author="${note.author}" data-note-text="${note.text}">✕</span>
                                         </div>`;
                                     });
@@ -1347,7 +1347,7 @@
                                 const notePrefix = isLastNote ? '└── ' : '├── ';
                                 html += `<div class="tree-item note-item">
                                     <span class="tree-indent">${notePrefix}</span>
-                                    <span class="note-item">📝 ${note.text}</span>
+                                    <span class="note-item"> ${note.text}</span>
                                     <span class="delete-btn" data-action="deleteNote" data-project-id="${project.id}" data-card-id="${card.id}" data-task-id="${task.id}" data-note-author="${note.author || 'general'}" data-note-text="${note.text}">✕</span>
                                 </div>`;
                             });

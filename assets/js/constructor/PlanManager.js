@@ -31,7 +31,7 @@ class PlanManager {
                 <div class="plan-columna">
                     <h3><i class="fas fa-link" style="color:#94e2d5;"></i> Enlaces</h3>
                     ${this.renderEnlacesColumna(planAnual, '📅 Plan Anual')}
-                    ${this.renderEnlacesColumna(planPedagogico, '📚 Plan Pedagógico')}
+                    ${this.renderEnlacesColumna(planPedagogico, ' Plan Pedagógico')}
                     ${this.renderEnlacesColumna(otros, '📎 Otros Enlaces')}
                 </div>
                 <div class="plan-columna">

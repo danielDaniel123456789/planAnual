@@ -7,7 +7,7 @@
                 let html = `
                     <div class="works-header">
                         <h2>
-                            <span class="icon-badge">${tipoInfo?.icono || '📋'}</span>
+                            <span class="icon-badge">${tipoInfo?.icono || ''}</span>
                             ${tipoInfo?.nombre || type}
                             <span class="count">(${works.length} items)</span>
                         </h2>

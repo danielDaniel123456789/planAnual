@@ -83,12 +83,9 @@ class BitacoraManager {
                     <i class="fas fa-plus"></i> Nueva Nota
                 </button>
             </div>
-            <div style="margin-bottom:12px; padding:8px 12px; background:var(--bg-hover); border-radius:6px; border-left:3px solid #f38ba8;">
-                <span style="font-size:12px; color:var(--text-muted);">
-                    <i class="fas fa-info-circle" style="color:#f38ba8;"></i> 
-                    Las notas se guardan en la base de datos y están asociadas a la sección actual.
-                </span>
-            </div>`;
+     
+            
+            `;
 
         if (entries.length === 0) {
             html += `<div class="empty-state"><p>No hay notas</p></div>`;
@@ -130,7 +127,7 @@ class BitacoraManager {
             title: 'Nueva Nota',
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label>📝 Título:</label>
+                    <label> Título:</label>
                     <input id="swal-titulo" class="swal2-input" placeholder="Título">
                     <label>📄 Contenido:</label>
                     <textarea id="swal-contenido" class="swal2-textarea" rows="6" placeholder="Escribe tu nota..."></textarea>
@@ -171,7 +168,7 @@ class BitacoraManager {
             title: 'Editar Nota',
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label>📝 Título:</label>
+                    <label> Título:</label>
                     <input id="swal-titulo" class="swal2-input" value="${escapeHtml(entry.titulo)}">
                     <label>📄 Contenido:</label>
                     <textarea id="swal-contenido" class="swal2-textarea" rows="6">${escapeHtml(entry.contenido)}</textarea>

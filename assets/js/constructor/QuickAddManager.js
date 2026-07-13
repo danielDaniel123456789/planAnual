@@ -12,20 +12,20 @@ class QuickAddManager {
             title: 'Agregar Rápido',
             html: `
             <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
-                <label style="font-size:13px; color:var(--text-secondary);">📋 ¿Qué deseas agregar?</label>
+                <label style="font-size:13px; color:var(--text-secondary);"> ¿Qué deseas agregar?</label>
                 <select id="swal-tipo" class="swal2-input" style="appearance:auto;">
                     <option value="estudiante">👤 Estudiante</option>
-                    <option value="cotidiano">📝 Trabajo Cotidiano</option>
-                    <option value="tarea">📚 Tarea</option>
-                    <option value="examen">📝 Examen</option>
-                    <option value="proyecto">🚀 Proyecto</option>
+                    <option value="cotidiano"> Trabajo Cotidiano</option>
+                    <option value="tarea"> Tarea</option>
+                    <option value="examen"> Examen</option>
+                    <option value="proyecto"> Proyecto</option>
                     <option value="machote">📦 Machote</option>
                     <option value="rubro">📊 Rubro</option>
                     <option value="plan">📅 Plan</option>
                 </select>
                 
                 <div id="quickAddFields">
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                     <input id="swal-nombre" class="swal2-input" placeholder="Escribe el nombre...">
                 </div>
             </div>`,
@@ -48,7 +48,7 @@ class QuickAddManager {
                         case 'estudiante':
                             placeholder = 'Nombre del estudiante';
                             extraFields = `
-                                <label style="font-size:13px; color:var(--text-secondary); margin-top:8px;">📋 Cédula:</label>
+                                <label style="font-size:13px; color:var(--text-secondary); margin-top:8px;"> Cédula:</label>
                                 <input id="swal-cedula" class="swal2-input" placeholder="1-1234-5678">
                                 
                                 <label style="font-size:13px; color:var(--text-secondary);">📧 Correo:</label>
@@ -97,13 +97,13 @@ class QuickAddManager {
                                 <label style="font-size:13px; color:var(--text-secondary);">📅 Fecha de entrega:</label>
                                 <input id="swal-fecha" class="swal2-input" type="date">
                                 
-                                <label style="font-size:13px; color:var(--text-secondary);">📋 Rúbrica (opcional):</label>
+                                <label style="font-size:13px; color:var(--text-secondary);"> Rúbrica (opcional):</label>
                                 <textarea id="swal-rubrica" class="swal2-textarea" rows="2" placeholder="Criterios de evaluación..."></textarea>
                             `;
                     }
                     
                     container.innerHTML = `
-                        <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                        <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                         <input id="swal-nombre" class="swal2-input" placeholder="${placeholder}">
                         ${extraFields}
                     `;

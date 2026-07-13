@@ -23,10 +23,10 @@ const STORES = {
 };
 
         const TIPOS_TRABAJO = {
-            cotidiano: { id: 'cotidiano', nombre: 'Trabajo Cotidiano', puntosMax: 100, icono: '📝', color: '#89b4fa', label: 'Cotidianos' },
-            tarea: { id: 'tarea', nombre: 'Tarea', puntosMax: 100, icono: '📚', color: '#a6e3a1', label: 'Tareas' },
-            examen: { id: 'examen', nombre: 'Examen', puntosMax: 100, icono: '📝', color: '#f9e2af', label: 'Exámenes' },
-            proyecto: { id: 'proyecto', nombre: 'Proyecto', puntosMax: 100, icono: '🚀', color: '#fab387', label: 'Proyectos' }
+            cotidiano: { id: 'cotidiano', nombre: 'Trabajo Cotidiano', puntosMax: 100, icono: '', color: '#89b4fa', label: 'Cotidianos' },
+            tarea: { id: 'tarea', nombre: 'Tarea', puntosMax: 100, icono: '', color: '#a6e3a1', label: 'Tareas' },
+            examen: { id: 'examen', nombre: 'Examen', puntosMax: 100, icono: '', color: '#f9e2af', label: 'Exámenes' },
+            proyecto: { id: 'proyecto', nombre: 'Proyecto', puntosMax: 100, icono: '', color: '#fab387', label: 'Proyectos' }
         };
 
     // ============================================================

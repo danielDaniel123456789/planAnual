@@ -16,10 +16,10 @@ class WorkManager {
             asistencia: 'Asistencia'
         };
         const tipoIconos = {
-            cotidiano: '📝',
-            tarea: '📚',
-            examen: '📝',
-            proyecto: '🚀',
+            cotidiano: '',
+            tarea: '',
+            examen: '',
+            proyecto: '',
             asistencia: '📅'
         };
 
@@ -27,7 +27,7 @@ class WorkManager {
             title: `Agregar ${tipoLabels[type] || type}`,
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre del trabajo:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre del trabajo:</label>
                     <input id="swal-nombre" class="swal2-input" placeholder="Ej. ${tipoLabels[type] || type} 1">
                     
                     <label style="font-size:13px; color:var(--text-secondary);">🎯 Puntaje máximo:</label>
@@ -39,7 +39,7 @@ class WorkManager {
                     <label style="font-size:13px; color:var(--text-secondary);">⏰ Fecha de entrega:</label>
                     <input id="swal-fecha-entrega" class="swal2-input" type="date">
                     
-                    <label style="font-size:13px; color:var(--text-secondary);">📋 Rúbrica (opcional):</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Rúbrica (opcional):</label>
                     <textarea id="swal-rubrica" class="swal2-textarea" rows="3" placeholder="Criterios de evaluación..."></textarea>
                 </div>`,
             showCancelButton: true,
@@ -98,7 +98,7 @@ class WorkManager {
             title: `Editar ${tipoLabels[type] || type}: ${escapeHtml(work.nombre)}`,
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                     <input id="swal-nombre" class="swal2-input" value="${escapeHtml(work.nombre)}">
                     
                     <label style="font-size:13px; color:var(--text-secondary);">🎯 Puntaje máximo:</label>
@@ -110,7 +110,7 @@ class WorkManager {
                     <label style="font-size:13px; color:var(--text-secondary);">⏰ Fecha de entrega:</label>
                     <input id="swal-fecha-entrega" class="swal2-input" type="date" value="${work.fechaEntrega || ''}">
                     
-                    <label style="font-size:13px; color:var(--text-secondary);">📋 Rúbrica:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Rúbrica:</label>
                     <textarea id="swal-rubrica" class="swal2-textarea" rows="3">${escapeHtml(work.rubrica || '')}</textarea>
                 </div>`,
             showCancelButton: true,

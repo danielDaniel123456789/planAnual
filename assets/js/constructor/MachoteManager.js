@@ -116,7 +116,7 @@ class MachoteManager {
             title: 'Crear Nuevo Machote',
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre del Machote:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre del Machote:</label>
                     <input id="swal-nombre" class="swal2-input" placeholder="Ej. Plantilla de Proyecto">
                     
                     <label style="font-size:13px; color:var(--text-secondary);">📂 Categoría:</label>
@@ -125,7 +125,7 @@ class MachoteManager {
                     <label style="font-size:13px; color:var(--text-secondary);">📄 Descripción:</label>
                     <textarea id="swal-descripcion" class="swal2-textarea" rows="4" placeholder="Describe el propósito de este machote..."></textarea>
                     
-                    <label style="font-size:13px; color:var(--text-secondary);">📋 Contenido del Machote:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Contenido del Machote:</label>
                     <textarea id="swal-contenido" class="swal2-textarea" rows="6" placeholder="Escribe el contenido detallado del machote..."></textarea>
                 </div>`,
             showCancelButton: true,
@@ -196,7 +196,7 @@ class MachoteManager {
                     
                     ${machote.contenido ? `
                         <div>
-                            <span style="font-weight:600; color:var(--text-primary);">📋 Contenido:</span>
+                            <span style="font-weight:600; color:var(--text-primary);"> Contenido:</span>
                             <div style="margin-top:4px; padding:12px; background:var(--bg-hover); border-radius:6px; max-height:300px; overflow-y:auto; white-space:pre-wrap;">
                                 ${escapeHtml(machote.contenido)}
                             </div>
@@ -224,7 +224,7 @@ class MachoteManager {
             title: `Editar Machote: ${escapeHtml(machote.nombre)}`,
             html: `
                 <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                     <input id="swal-nombre" class="swal2-input" value="${escapeHtml(machote.nombre)}">
                     
                     <label style="font-size:13px; color:var(--text-secondary);">📂 Categoría:</label>
@@ -233,7 +233,7 @@ class MachoteManager {
                     <label style="font-size:13px; color:var(--text-secondary);">📄 Descripción:</label>
                     <textarea id="swal-descripcion" class="swal2-textarea" rows="4">${escapeHtml(machote.descripcion || '')}</textarea>
                     
-                    <label style="font-size:13px; color:var(--text-secondary);">📋 Contenido:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Contenido:</label>
                     <textarea id="swal-contenido" class="swal2-textarea" rows="6">${escapeHtml(machote.contenido || '')}</textarea>
                 </div>`,
             showCancelButton: true,

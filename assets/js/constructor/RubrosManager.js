@@ -28,7 +28,7 @@ async editRubro(id) {
         title: `✏️ Editar Rubro: ${escapeHtml(rubro.nombre)}`,
         html: `
             <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-                <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                 <input id="swal-nombre" class="swal2-input" value="${escapeHtml(rubro.nombre)}">
                 <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
                 <input id="swal-porcentaje" class="swal2-input" type="number" value="${rubro.porcentaje || 0}" min="0" max="100" step="1">
@@ -221,7 +221,7 @@ async editRubro(id) {
                             (Total actual: ${totalActual}%)
                         </span>
                     </div>
-                    <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                    <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                     <input id="swal-nombre" class="swal2-input" placeholder="Ej. Trabajos Cotidianos">
                     <label style="font-size:13px; color:var(--text-secondary);">📊 Porcentaje (%):</label>
                     <input id="swal-porcentaje" class="swal2-input" type="number" min="0" max="${restante}" placeholder="Ej. 25" value="${Math.min(25, restante)}">
@@ -301,7 +301,7 @@ async editRubro(id) {
                         <input id="swal-valor" class="swal2-input" type="number" min="0" max="${restante}" value="${valorActual}" step="1">
                         <div style="font-size:11px; color:var(--text-muted);">Rango permitido: 0% - ${restante}%</div>
                     ` : `
-                        <label style="font-size:13px; color:var(--text-secondary);">📝 Nombre:</label>
+                        <label style="font-size:13px; color:var(--text-secondary);"> Nombre:</label>
                         <input id="swal-valor" class="swal2-input" value="${escapeHtml(valorActual)}">
                     `}
                 </div>`,

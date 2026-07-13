@@ -267,7 +267,7 @@ class AsistenciaManager {
                                 <option value="presente" ${estado === 'presente' ? 'selected' : ''}>✅ Presente</option>
                                 <option value="ausente" ${estado === 'ausente' ? 'selected' : ''}>❌ Ausente</option>
                                 <option value="tardia" ${estado === 'tardia' ? 'selected' : ''}>⏰ Tardía</option>
-                                <option value="justificada" ${estado === 'justificada' ? 'selected' : ''}>📝 Justificada</option>
+                                <option value="justificada" ${estado === 'justificada' ? 'selected' : ''}> Justificada</option>
                             </select>
                         </td>
                     </tr>
@@ -325,7 +325,7 @@ class AsistenciaManager {
                 presente: 'Presente ✅',
                 ausente: 'Ausente ❌',
                 tardia: 'Tardía ⏰',
-                justificada: 'Justificada 📝'
+                justificada: 'Justificada '
             }[nuevoEstado] || nuevoEstado;
 
             this.app.ui.showToast(`${nombreEstudiante} → ${estadoTexto}`, 'success', 800);
@@ -556,7 +556,7 @@ class AsistenciaManager {
                             <th style="padding:8px; text-align:center; background:rgba(166,227,161,0.1);">✅ Presente</th>
                             <th style="padding:8px; text-align:center; background:rgba(243,139,168,0.1);">❌ Ausente</th>
                             <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.1);">⏰ Tardía</th>
-                            <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);">📝 Justificada</th>
+                            <th style="padding:8px; text-align:center; background:rgba(137,180,250,0.1);"> Justificada</th>
                             <th style="padding:8px; text-align:center;">Total Lec.</th>
                             <th style="padding:8px; text-align:center;">% Asist.</th>
                             <th style="padding:8px; text-align:center; background:rgba(249,226,175,0.15); color:#f9e2af;">Nota (${pesoAsistencia}%)</th>

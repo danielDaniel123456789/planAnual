@@ -341,7 +341,7 @@ async function registrarCorreoManual() {
 // 6. SUBIR DB AL SERVIDOR (VERSIÓN DEFINITIVA - CON INPUT NATIVO)
 // ============================================================
 async function subirDataBase() {
-    console.log('🚀 subirDataBase() iniciada');
+    console.log(' subirDataBase() iniciada');
 
     try {
         // Cerrar cualquier modal abierto

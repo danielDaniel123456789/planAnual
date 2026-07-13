@@ -325,13 +325,15 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                             <i class="fas fa-times"></i> Limpiar selección
                         </button>
                     ` : ''}
-                    <button class="btn-action btn-success" onclick="window.app?.exportarExcel()">
-                        <i class="fas fa-file-excel"></i> Exportar Excel
-                    </button>
+                   
 
                  
 <button class="btn-action btn-info" onclick="descargarPDFEstudiante()">
     <i class="fas fa-file-pdf"></i> PDF por Estudiante
+</button>
+
+<button class="btn-action btn-info" onclick="descargarCVC_Estudiantes()">
+    <i class="fas fa-file-pdf"></i> SEA CVC 
 </button>
                 </div>
             </div>`;
@@ -639,10 +641,10 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
             asistencia: 'Asistencia'
         };
         const tipoIcono = {
-            cotidiano: '📝',
-            tarea: '📚',
-            examen: '📝',
-            proyecto: '🚀',
+            cotidiano: '',
+            tarea: '',
+            examen: '',
+            proyecto: '',
             asistencia: '📅'
         };
         const tipoColor = {
@@ -704,7 +706,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
         if (rubrica && rubrica.criterios && rubrica.criterios.length > 0) {
             rubricaHtml = `
                 <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
-                    <strong style="color:var(--text-primary); font-size:13px;">📋 Rúbrica de evaluación:</strong>
+                    <strong style="color:var(--text-primary); font-size:13px;"> Rúbrica de evaluación:</strong>
                     <div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; font-size:12px;">
                         ${rubrica.criterios.map((c, i) => `
                             <div style="display:flex; justify-content:space-between; padding:2px 4px; background:var(--bg-hover); border-radius:4px;">

@@ -632,8 +632,6 @@ function mostrarOpcionesBaseDatos() {
                 <button class="swal2-button-option" style="color:#f38ba8;" onclick="eliminarBaseDatos(); ">
                     <i class="fas fa-trash-alt"></i> Eliminar DB (local)
                 </button>
-
-              
             </div>
         `,
         showConfirmButton: false,

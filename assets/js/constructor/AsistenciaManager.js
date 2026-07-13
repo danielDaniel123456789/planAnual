@@ -768,6 +768,74 @@ class AsistenciaManager {
     // ------------------------------------------------------------
     // Cargar librerías jsPDF y autoTable desde CDN (mejorado)
     // ------------------------------------------------------------
+
+
+    // ============================================================
+// Calcular porcentaje de asistencia de un estudiante (0-100)
+// ============================================================
+async calcularPorcentajeAsistencia(studentId) {
+    const seccionId = this.app.currentSectionId;
+    if (!seccionId) return 0;
+
+    // Obtener todos los registros de la sección
+    let todos = [];
+    try {
+        todos = await this.app.db.getByIndex(STORES.ASISTENCIA, 'seccionId', seccionId);
+    } catch (e) {
+        console.warn('Error obteniendo registros de asistencia:', e);
+        return 0;
+    }
+
+    if (!todos || todos.length === 0) {
+        // Sin registros → 100% (puedes cambiarlo a 0 si prefieres)
+        return 100;
+    }
+
+    // Obtener parámetros de asistencia (ya cargados)
+    await this.cargarPorcentaje();
+    const maxAusencias = this.maxAusencias;
+    const tardiasPorAusencia = this.tardiasPorAusencia;
+    const leccionesPorDefecto = this.leccionesPorDefecto;
+
+    const estudianteIdNum = Number(studentId);
+    const registrosEst = todos.filter(r => Number(r.estudianteId) === estudianteIdNum);
+
+    let leccionesPresente = 0;
+    let leccionesAusente = 0;
+    let leccionesTardia = 0;
+    let leccionesJustificada = 0;
+    let totalLeccionesEst = 0;
+
+    for (const reg of registrosEst) {
+        const lec = reg.lecciones || leccionesPorDefecto;
+        totalLeccionesEst += lec;
+        switch (reg.estado) {
+            case 'presente': leccionesPresente += lec; break;
+            case 'ausente': leccionesAusente += lec; break;
+            case 'tardia': leccionesTardia += lec; break;
+            case 'justificada': leccionesJustificada += lec; break;
+        }
+    }
+
+    if (registrosEst.length === 0 || totalLeccionesEst === 0) {
+        return 100;
+    }
+
+    const leccionesPerdidas = leccionesAusente + (leccionesTardia / tardiasPorAusencia);
+    const maxLeccionesPermitidas = maxAusencias * leccionesPorDefecto;
+
+    let porcentajeAsistencia = 100;
+    if (totalLeccionesEst > 0) {
+        if (leccionesPerdidas >= maxLeccionesPermitidas) {
+            porcentajeAsistencia = 0;
+        } else {
+            porcentajeAsistencia = 100 * (1 - leccionesPerdidas / maxLeccionesPermitidas);
+        }
+    }
+    porcentajeAsistencia = Math.round(porcentajeAsistencia * 10) / 10;
+    return porcentajeAsistencia;
+}
+
     cargarLibreriasPDF() {
         return new Promise((resolve, reject) => {
             // Si ya están cargadas y autoTable funciona, resolver

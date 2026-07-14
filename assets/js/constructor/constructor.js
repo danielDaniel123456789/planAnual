@@ -12,24 +12,69 @@ class App extends BaseApp {
         this.groupModeManager = new GroupModeManager(this);
         this.quickAddManager = new QuickAddManager(this);
         this.machoteManager = new MachoteManager(this);
-       this.bitacoraManager = new BitacoraManager(this);
-        this.rubrosManager = new RubrosManager(this); 
-    
+        this.bitacoraManager = new BitacoraManager(this);
+        this.rubrosManager = new RubrosManager(this);
+        this.alertManager = new AlertManager(); // 👈 NUEVO
     }
 
-// ============================================================
-// DELEGACIÓN DE MÉTODOS - RubrosManager
-// ============================================================
-async editarRubro(id) { await this.rubrosManager.editRubro(id); }
-     // Estos métodos deben estar dentro de la clase, no solo en el constructor
+    // ============================================================
+    // SOBRESCRIBIR init PARA MOSTRAR ALERTAS AL CARGAR
+    // ============================================================
+    async init() {
+        // Llamar al init de BaseApp (carga datos, renderiza, etc.)
+        await super.init();
+        // Mostrar alertas después de que la app esté completamente cargada
+        setTimeout(() => {
+            this.alertManager.mostrarAlertas();
+        }, 1000);
+        console.log('✅ App lista con AlertManager');
+    }
+
+    // ============================================================
+    // DELEGACIÓN DE MÉTODOS - AlertManager
+    // ============================================================
+    async mostrarPanelAlertas() {
+        await this.alertManager.mostrarPanel();
+    }
+
+    async agregarAlerta() {
+        await this.alertManager.agregarAlertaFormulario();
+        await this.alertManager.mostrarPanel();
+    }
+
+    async editarAlerta(id) {
+        await this.alertManager.editarAlertaFormulario(id);
+        await this.alertManager.mostrarPanel();
+    }
+
+    async eliminarAlerta(id) {
+        const alerta = this.alertManager.obtenerAlertaPorId(id);
+        if (!alerta) return;
+        const confirm = await this.ui.showConfirm(`¿Eliminar la alerta "${alerta.mensaje}"?`);
+        if (confirm.isConfirmed) {
+            this.alertManager.eliminarAlerta(id);
+            await this.alertManager.mostrarPanel();
+            this.ui.showSuccess('Alerta eliminada');
+        }
+    }
+
+    async mostrarAlertasAhora() {
+        this.alertManager.mostrarAlertas();
+    }
+
+    // ============================================================
+    // DELEGACIÓN DE MÉTODOS - RubrosManager
+    // ============================================================
+    async editarRubro(id) { await this.rubrosManager.editRubro(id); }
     async addBitacora() { await this.bitacoraManager.addBitacora(); }
     async editBitacora(id) { await this.bitacoraManager.editBitacora(id); }
     async deleteBitacora(id) { await this.bitacoraManager.deleteBitacora(id); }
+
     // ============================================================
     // DELEGACIÓN DE MÉTODOS - StudentManager
     // ============================================================
     async addStudent() { await this.studentManager.addStudent(); }
-     async editStudent(id) { await this.studentManager.editStudent(id); }  
+    async editStudent(id) { await this.studentManager.editStudent(id); }
     async deleteStudent(id) { await this.studentManager.deleteStudent(id); }
     async importStudents() { await this.studentManager.importStudents(); }
 
@@ -50,8 +95,8 @@ async editarRubro(id) { await this.rubrosManager.editRubro(id); }
     limpiarSeleccionCategoria() { this.finalGradesManager.limpiarSeleccionCategoria(); }
     toggleGrupo(tipo) { this.finalGradesManager.toggleGrupo(tipo); }
     toggleAllGroups() { this.finalGradesManager.toggleAllGroups(); }
-    mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega) { 
-        this.finalGradesManager.mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega); 
+    mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega) {
+        this.finalGradesManager.mostrarInfoTrabajo(tipo, id, nombre, fecha, puntosMax, fechaAsignacion, fechaEntrega);
     }
     async guardarNotaDesdeInputFinal(input) { await this.finalGradesManager.guardarNotaDesdeInputFinal(input); }
 

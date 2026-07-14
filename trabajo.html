@@ -57,6 +57,8 @@
     <script src="./assets/js/constructor/descargarPDFEstudiante.js"></script>
     <script src="./assets/js/constructor/descargarCVC_Estudiantes.js"></script>
     <!-- APP PRINCIPAL -->
+
+     <script src="./assets/js/constructor/alertas.js"></script>
     <script src="./assets/js/constructor/constructor.js"></script>
 
 </head>
@@ -80,9 +82,9 @@
             <div class="activity-item" data-view="profesor" title="Profesor" onclick="mostrarProfesor()">
     <i class="fas fa-chalkboard-user"></i>
 </div>
-            <div class="activity-item" data-view="horario" title="Horario">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
+     <div class="activity-item" data-view="alertas" title="Alertas" onclick="window.app?.mostrarPanelAlertas()">
+    <i class="fas fa-bell"></i>
+</div>
             <div class="activity-item" data-view="evaluacion" title="Evaluación">
                 <i class="fas fa-table-list"></i>
             </div>

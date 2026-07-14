@@ -299,5 +299,109 @@ console.log('typeof RubrosManager:', typeof RubrosManager);
 
 // Probar editar un rubro manualmente (reemplaza 1 con un ID real)
 // window.app.editarRubro(1);
+
+
+</script>
+
+<!-- ============================================================ -->
+<!-- SISTEMA DE NOTIFICACIÓN DE RESPALDOS PENDIENTES -->
+<!-- ============================================================ -->
+<script>
+    (function() {
+        function patchDb() {
+            if (typeof db === 'undefined' || !db.add) {
+                setTimeout(patchDb, 200);
+                return;
+            }
+            const originalAdd = db.add.bind(db);
+            const originalPut = db.put.bind(db);
+            const originalDelete = db.delete.bind(db);
+
+            db.add = function(store, data) {
+                marcarCambios();
+                return originalAdd(store, data);
+            };
+            db.put = function(store, data) {
+                marcarCambios();
+                return originalPut(store, data);
+            };
+            db.delete = function(store, id) {
+                marcarCambios();
+                return originalDelete(store, id);
+            };
+            console.log('✅ DB parcheada');
+            actualizarBadge();
+            verificarRecordatorio();
+        }
+
+        function marcarCambios() {
+            localStorage.setItem('sync_pending', 'true');
+            actualizarBadge();
+        }
+
+        function actualizarBadge() {
+            const badge = document.getElementById('syncBadge');
+            if (!badge) return;
+            const pending = localStorage.getItem('sync_pending') === 'true';
+            badge.style.display = pending ? 'inline-flex' : 'none';
+        }
+
+        function verificarRecordatorio() {
+            const pending = localStorage.getItem('sync_pending') === 'true';
+            if (!pending) return;
+
+            const lastUpload = localStorage.getItem('sync_last_upload');
+            const intervalMin = parseInt(localStorage.getItem('sync_interval') || '0');
+
+            if (!lastUpload || !intervalMin) {
+                // Sin configuración completa → recordatorio suave
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'info',
+                        title: '📤 Respaldo pendiente',
+                        text: 'Tienes cambios sin subir. Configura la frecuencia y sube tu respaldo.',
+                        confirmButtonText: 'Configurar y subir',
+                        showCancelButton: true,
+                        cancelButtonText: 'Recordar después',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-primary)'
+                    }).then((r) => { if (r.isConfirmed) subirDataBase(); });
+                }, 1500);
+                return;
+            }
+
+            const diffMin = Math.floor((new Date() - new Date(lastUpload)) / 60000);
+            if (diffMin >= intervalMin) {
+                let tiempoTexto = '';
+                if (intervalMin < 60) tiempoTexto = `${intervalMin} minuto${intervalMin>1?'s':''}`;
+                else if (intervalMin < 1440) tiempoTexto = `${Math.floor(intervalMin/60)} hora${Math.floor(intervalMin/60)>1?'s':''}`;
+                else tiempoTexto = `${Math.floor(intervalMin/1440)} día${Math.floor(intervalMin/1440)>1?'s':''}`;
+
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⏰ ¡Respaldo pendiente!',
+                        html: `Han pasado <strong>${diffMin}</strong> min desde tu último respaldo (cada ${tiempoTexto}).<br>¿Subir ahora?`,
+                        confirmButtonText: 'Subir ahora',
+                        showCancelButton: true,
+                        cancelButtonText: 'Recordar después',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-primary)'
+                    }).then((r) => { if (r.isConfirmed) subirDataBase(); });
+                }, 1500);
+            }
+        }
+
+        window.marcarCambios = marcarCambios;
+        window.actualizarBadge = actualizarBadge;
+        window.limpiarCambios = function() {
+            localStorage.removeItem('sync_pending');
+            actualizarBadge();
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            patchDb();
+        });
+    })();
 </script>
 </html>

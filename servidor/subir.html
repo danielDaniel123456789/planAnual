@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subir respaldo JSON al servidor</title>
+    <title>Subir y descargar respaldo JSON</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -98,6 +98,8 @@
         button.danger:hover { background: #f5a3bb; }
         button.success { background: #a6e3a1; }
         button.success:hover { background: #b8f0b3; }
+        button.warning { background: #f9e2af; color: #1e1e2f; }
+        button.warning:hover { background: #fce8b8; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .respuesta {
             background: #1e1e2f;
@@ -133,7 +135,7 @@
 <body>
 
     <h1>
-        📤 Subir respaldo JSON al servidor
+        📤 Subir / 📥 Descargar respaldo JSON
         <small>— Prueba de endpoints</small>
     </h1>
 
@@ -177,13 +179,30 @@
             <span class="badge" id="tamano-json">0 bytes</span>
         </div>
 
-        <!-- Área de previsualización (opcional) -->
         <details style="margin-top: 12px;">
             <summary style="cursor:pointer; color:#a6adc8; font-size:13px;"> Ver contenido del JSON</summary>
             <textarea id="preview-json" readonly placeholder="El contenido del archivo aparecerá aquí..." rows="6"></textarea>
         </details>
 
         <div id="post-respuesta" class="respuesta">Esperando acción...</div>
+    </div>
+
+    <!-- ======================================== -->
+    <!-- SECCIÓN DESCARGAR RESPALDO (GET) -->
+    <!-- ======================================== -->
+    <div class="card">
+        <h2><span style="color:#f9e2af;">📥</span> Descargar respaldo (GET)</h2>
+        <div class="row">
+            <label for="download-correo">Correo:</label>
+            <input type="email" id="download-correo" value="test@ejemplo.com" placeholder="ejemplo@correo.com">
+        </div>
+        <div class="flex mt-8">
+            <button class="warning" onclick="descargarRespaldo()">
+                <span>⬇️</span> Descargar JSON
+            </button>
+            <button onclick="limpiar('download-respuesta')" class="danger">Limpiar</button>
+        </div>
+        <div id="download-respuesta" class="respuesta">Esperando acción...</div>
     </div>
 
     <!-- ======================================== -->
@@ -196,6 +215,7 @@
         // --- Elementos DOM ---
         const getCorreoInput = document.getElementById('get-correo');
         const postCorreoInput = document.getElementById('post-correo');
+        const downloadCorreoInput = document.getElementById('download-correo');
         const fileInput = document.getElementById('json-file');
         const previewTextarea = document.getElementById('preview-json');
         const fileInfo = document.getElementById('file-info');
@@ -251,9 +271,8 @@
             reader.onload = function(e) {
                 try {
                     const texto = e.target.result;
-                    // Validar que sea JSON válido
                     const parsed = JSON.parse(texto);
-                    jsonContent = texto; // Guardamos el string
+                    jsonContent = texto;
                     previewTextarea.value = JSON.stringify(parsed, null, 2);
                     const size = new Blob([texto]).size;
                     fileInfo.textContent = `📄 Archivo: ${file.name} (${(size / 1024).toFixed(1)} KB)`;
@@ -275,7 +294,6 @@
             const correo = postCorreoInput.value.trim();
             const cont = document.getElementById('post-respuesta');
 
-            // Validar correo
             if (!correo) {
                 cont.className = 'respuesta error';
                 cont.textContent = '❌ Correo obligatorio.';
@@ -287,14 +305,12 @@
                 return;
             }
 
-            // Validar que haya un JSON cargado
             if (!jsonContent) {
                 cont.className = 'respuesta error';
                 cont.textContent = '❌ No hay un archivo JSON válido seleccionado.';
                 return;
             }
 
-            // Mostrar estado de carga
             cont.className = 'respuesta';
             cont.textContent = '⏳ Subiendo archivo al servidor...';
 
@@ -318,10 +334,79 @@
                 cont.className = res.ok ? 'respuesta success' : 'respuesta error';
                 cont.textContent = `📤 ${res.status} ${res.statusText}\n${JSON.stringify(json, null, 2)}`;
 
-                // Si el servidor devuelve 404, sugerir registrar el correo
                 if (res.status === 404) {
                     cont.textContent += '\n\n💡 El correo no está registrado. Usa "Registrar correo" primero.';
                 }
+            } catch (e) {
+                cont.className = 'respuesta error';
+                cont.textContent = `❌ Error de conexión: ${e.message}`;
+                console.error('Fetch error:', e);
+            }
+        }
+
+        // ============================================
+        // 4. DESCARGAR RESPALDO (GET)
+        // ============================================
+        async function descargarRespaldo() {
+            const correo = downloadCorreoInput.value.trim();
+            const cont = document.getElementById('download-respuesta');
+
+            if (!correo) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Correo obligatorio.';
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                cont.className = 'respuesta error';
+                cont.textContent = '❌ Correo electrónico inválido.';
+                return;
+            }
+
+            cont.className = 'respuesta';
+            cont.textContent = '⏳ Descargando respaldo...';
+
+            try {
+                const url = `${BASE}descargarJSON.php?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
+                const res = await fetch(url);
+
+                if (res.status === 404) {
+                    cont.className = 'respuesta error';
+                    cont.textContent = '❌ No se encontró respaldo para este correo.';
+                    return;
+                }
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    cont.className = 'respuesta error';
+                    cont.textContent = `❌ Error ${res.status}: ${text}`;
+                    return;
+                }
+
+                // Obtener el JSON como texto
+                const jsonText = await res.text();
+
+                // Verificar que sea JSON válido
+                try {
+                    JSON.parse(jsonText);
+                } catch (e) {
+                    cont.className = 'respuesta error';
+                    cont.textContent = '❌ El servidor devolvió un JSON inválido.';
+                    return;
+                }
+
+                // Crear blob y descargar
+                const blob = new Blob([jsonText], { type: 'application/json' });
+                const urlBlob = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = urlBlob;
+                a.download = `backup_${correo}_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(urlBlob);
+
+                cont.className = 'respuesta success';
+                cont.textContent = `✅ Respaldo descargado correctamente (${(blob.size / 1024).toFixed(1)} KB)`;
 
             } catch (e) {
                 cont.className = 'respuesta error';
@@ -331,7 +416,7 @@
         }
 
         // ============================================
-        // 4. LIMPIAR RESPUESTA
+        // 5. LIMPIAR RESPUESTA
         // ============================================
         function limpiar(id) {
             const el = document.getElementById(id);
@@ -339,13 +424,7 @@
             el.textContent = 'Esperando acción...';
         }
 
-        // ============================================
-        // 5. REGISTRAR CORREO (opcional)
-        // ============================================
-        // Puedes añadir un botón que llame a registrarCorreoManual() si tienes esa función.
-        // Por ahora lo dejamos así.
-
-        console.log('✅ HTML de prueba listo. Sube tu JSON con correo.');
+        console.log('✅ HTML de prueba listo. Puedes subir, consultar y descargar respaldos.');
     </script>
 
 </body>

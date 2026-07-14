@@ -329,59 +329,85 @@ async function registrarCorreoManual() {
 }
 
 // ============================================================
-// 6. SUBIR DB AL SERVIDOR (con registro automático)
-// ============================================================
-// ============================================================
-// 6. SUBIR DB AL SERVIDOR (VERSIÓN SIMPLIFICADA Y ROBUSTA)
-// ============================================================
-// ============================================================
-// 6. SUBIR DB AL SERVIDOR (VERSIÓN CON SELECCIÓN DE ARCHIVO)
-// ============================================================
-// ============================================================
-// 6. SUBIR DB AL SERVIDOR (VERSIÓN DEFINITIVA - CON INPUT NATIVO)
+// 6. SUBIR DB AL SERVIDOR (VERSIÓN CON NOTIFICACIONES, FRECUENCIA Y CORREO GUARDADO)
 // ============================================================
 async function subirDataBase() {
-    console.log(' subirDataBase() iniciada');
-
+    console.log('📤 subirDataBase() iniciada');
     try {
-        // Cerrar cualquier modal abierto
         Swal.close();
 
-        // 1. Pedir correo con input nativo de SweetAlert
-        console.log('📧 Mostrando modal para pedir correo...');
-        const result = await Swal.fire({
-            title: 'Subir respaldo al servidor',
-            input: 'email',
-            inputLabel: 'Correo electrónico',
-            inputPlaceholder: 'ejemplo@correo.com',
-            showCancelButton: true,
-            confirmButtonText: 'Subir',
-            cancelButtonText: 'Cancelar',
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'Debes escribir un correo';
+        // 1. Correo (guardado o pedir)
+        let correo = localStorage.getItem('sync_email');
+        let correoConfirmado = false;
+
+        if (correo) {
+            const confirmResult = await Swal.fire({
+                title: 'Subir respaldo al servidor',
+                html: `<p>Correo actual: <strong>${correo}</strong></p><p style="font-size:13px; color:var(--text-muted);">¿Usar este correo o cambiarlo?</p>`,
+                showCancelButton: true,
+                confirmButtonText: 'Usar este correo',
+                cancelButtonText: 'Cambiar correo',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)'
+            });
+            if (confirmResult.isConfirmed) {
+                correoConfirmado = true;
+            } else {
+                const newCorreo = await pedirCorreo();
+                if (newCorreo) {
+                    correo = newCorreo;
+                    localStorage.setItem('sync_email', correo);
+                    correoConfirmado = true;
                 }
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-                    return 'Correo electrónico inválido';
-                }
-                return null; // válido
             }
-        });
+        } else {
+            correo = await pedirCorreo();
+            if (correo) {
+                localStorage.setItem('sync_email', correo);
+                correoConfirmado = true;
+            }
+        }
+        if (!correoConfirmado) return;
 
-        console.log('📧 Resultado del modal:', result);
+        // 2. Frecuencia (en minutos)
+        let intervalMin = parseInt(localStorage.getItem('sync_interval') || '0');
+        if (!intervalMin || intervalMin < 1) {
+            const intervalResult = await Swal.fire({
+                title: 'Frecuencia de respaldo',
+                text: '¿Cada cuánto tiempo quieres que te recordemos subir los cambios?',
+                input: 'select',
+                inputOptions: {
+                    '1': '1 minuto',
+                    '5': '5 minutos',
+                    '15': '15 minutos',
+                    '30': '30 minutos',
+                    '60': '1 hora',
+                    '1440': '1 día',
+                    '10080': '7 días',
+                    '43200': '30 días'
+                },
+                inputPlaceholder: 'Selecciona una opción',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar y continuar',
+                cancelButtonText: 'Saltar (no recordar)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                inputValidator: (value) => {
+                    if (!value) return 'Debes seleccionar una opción';
+                    return null;
+                }
+            });
 
-        if (!result.isConfirmed || !result.value) {
-            console.log('❌ Usuario canceló o cerró el modal');
-            return;
+            if (intervalResult.isConfirmed) {
+                intervalMin = parseInt(intervalResult.value);
+                localStorage.setItem('sync_interval', String(intervalMin));
+            } else {
+                intervalMin = 0;
+                localStorage.removeItem('sync_interval');
+            }
         }
 
-        const correo = result.value.trim();
-        console.log(`✅ Correo ingresado: ${correo}`);
-
-        // 2. Mostrar carga
-        console.log('⏳ Mostrando modal de carga...');
+        // 3. Mostrar carga
         Swal.fire({
             title: 'Subiendo respaldo...',
             text: 'Por favor espera, esto puede tomar unos segundos.',
@@ -389,8 +415,7 @@ async function subirDataBase() {
             didOpen: () => { Swal.showLoading(); }
         });
 
-        // 3. Obtener datos de IndexedDB
-        console.log('📦 Obteniendo datos de IndexedDB...');
+        // 4. Obtener datos de IndexedDB
         if (!db || !db.db) {
             throw new Error('Base de datos no inicializada');
         }
@@ -407,12 +432,9 @@ async function subirDataBase() {
             totalStores: storeNames.length,
             totalRecords: Object.values(exportData).reduce((sum, arr) => sum + arr.length, 0)
         };
-
         const jsonString = JSON.stringify(exportData);
-        console.log(`📦 JSON generado: ${jsonString.length} bytes`);
 
-        // 4. Enviar al servidor
-        console.log('📤 Enviando al servidor...');
+        // 5. Enviar al servidor
         const formData = new URLSearchParams();
         formData.append('api_key', API_KEY);
         formData.append('correo', correo);
@@ -426,16 +448,12 @@ async function subirDataBase() {
         });
 
         const textoRespuesta = await response.text();
-        console.log(`📥 Respuesta del servidor (status ${response.status}):`, textoRespuesta);
-
         let jsonResp;
         try { jsonResp = JSON.parse(textoRespuesta); } catch { jsonResp = { raw: textoRespuesta }; }
 
-        // 5. Manejar error 404 (correo no registrado)
+        // 6. Manejar error 404 (correo no registrado)
         if (response.status === 404) {
-            console.log('⚠️ Correo no registrado (404)');
-            Swal.close(); // Cerrar modal de carga
-
+            Swal.close();
             const confirmar = await Swal.fire({
                 title: 'Correo no registrado',
                 text: `El correo "${correo}" no existe en el servidor. ¿Deseas registrarlo ahora?`,
@@ -446,13 +464,9 @@ async function subirDataBase() {
                 background: 'var(--bg-card)',
                 color: 'var(--text-primary)'
             });
-
             if (!confirmar.isConfirmed) return;
 
-            // Registrar correo
-            console.log('📧 Registrando correo...');
             await registrarCorreoEnServidor(correo);
-
             await Swal.fire({
                 icon: 'success',
                 title: 'Correo registrado',
@@ -460,19 +474,19 @@ async function subirDataBase() {
                 timer: 1500,
                 timerProgressBar: true
             });
-
-            // Reintentar llamando a la misma función (recursivo)
             await subirDataBase();
             return;
         }
 
-        // 6. Otros errores
         if (!response.ok) {
             throw new Error(jsonResp?.error || textoRespuesta || 'Error en el servidor');
         }
 
-        // 7. Éxito
-        console.log('✅ Subida exitosa');
+        // 7. Éxito: limpiar bandera de cambios y actualizar fecha de última subida
+        localStorage.removeItem('sync_pending');
+        localStorage.setItem('sync_last_upload', new Date().toISOString());
+        if (window.actualizarBadge) window.actualizarBadge();
+
         Swal.close();
         Swal.fire({
             icon: 'success',
@@ -500,32 +514,49 @@ async function subirDataBase() {
         });
     }
 }
+
 // ============================================================
 // 7. DESCARGAR RESPALDO DESDE EL SERVIDOR Y RESTAURAR LOCALMENTE
 // ============================================================
+// ============================================================
+// descargarBackupServidor - Corregida y consistente con HTML de prueba
+// ============================================================
 async function descargarBackupServidor() {
     try {
-        const { value: correo } = await Swal.fire({
-            title: 'Descargar respaldo desde el servidor',
-            input: 'email',
-            inputLabel: 'Correo electrónico',
-            inputPlaceholder: 'ejemplo@correo.com',
-            showCancelButton: true,
-            confirmButtonText: 'Descargar',
-            cancelButtonText: 'Cancelar',
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            inputValidator: (value) => {
-                if (!value) return 'Debes escribir un correo';
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-                    return 'Correo electrónico inválido';
+        // 1. Obtener correo guardado o pedirlo
+        let correo = localStorage.getItem('sync_email');
+        let correoConfirmado = false;
+
+        if (correo) {
+            const confirmResult = await Swal.fire({
+                title: 'Descargar respaldo desde el servidor',
+                html: `<p>Correo actual: <strong>${correo}</strong></p><p style="font-size:13px; color:var(--text-muted);">¿Usar este correo o cambiarlo?</p>`,
+                showCancelButton: true,
+                confirmButtonText: 'Usar este correo',
+                cancelButtonText: 'Cambiar correo',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)'
+            });
+            if (confirmResult.isConfirmed) {
+                correoConfirmado = true;
+            } else {
+                const newCorreo = await pedirCorreo();
+                if (newCorreo) {
+                    correo = newCorreo;
+                    localStorage.setItem('sync_email', correo);
+                    correoConfirmado = true;
                 }
-                return null;
             }
-        });
+        } else {
+            correo = await pedirCorreo();
+            if (correo) {
+                localStorage.setItem('sync_email', correo);
+                correoConfirmado = true;
+            }
+        }
+        if (!correoConfirmado) return;
 
-        if (!correo) return;
-
+        // 2. Mostrar carga
         Swal.fire({
             title: 'Descargando respaldo...',
             text: 'Por favor espera.',
@@ -533,9 +564,13 @@ async function descargarBackupServidor() {
             didOpen: () => { Swal.showLoading(); }
         });
 
-        const url = `${DOWNLOAD_URL}?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
+        // 3. Llamar al endpoint descargarJSON.php (igual que en el HTML de prueba)
+        // Asegúrate de que DOWNLOAD_URL apunte a 'https://educr.app/databaseJSON/descargarJSON.php'
+        // o define directamente la URL aquí:
+        const url = `https://educr.app/databaseJSON/descargarJSON.php?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
         const response = await fetch(url);
 
+        // 4. Manejar errores (igual que en el HTML)
         if (response.status === 404) {
             Swal.close();
             Swal.fire('Error', 'No se encontró respaldo para este correo.', 'error');
@@ -544,53 +579,92 @@ async function descargarBackupServidor() {
 
         if (!response.ok) {
             const text = await response.text();
-            let json;
-            try { json = JSON.parse(text); } catch { json = { error: text }; }
-            throw new Error(json.error || 'Error al descargar');
+            Swal.close();
+            Swal.fire('Error', `Error ${response.status}: ${text}`, 'error');
+            return;
         }
 
-        const jsonData = await response.json();
+        // 5. Obtener el JSON como texto (igual que en el HTML)
+        const jsonText = await response.text();
 
-        // Confirmar restauración
+        // Verificar que sea JSON válido
+        let jsonData;
+        try {
+            jsonData = JSON.parse(jsonText);
+        } catch (e) {
+            Swal.close();
+            Swal.fire('Error', 'El servidor devolvió un JSON inválido.', 'error');
+            return;
+        }
+
+        // 6. Preguntar qué hacer con el archivo
         Swal.close();
-        const confirm = await Swal.fire({
-            title: '⚠️ Restaurar respaldo',
-            text: 'Esto SOBRESCRIBIRÁ todos los datos actuales en tu base de datos local. ¿Continuar?',
-            icon: 'warning',
+        const action = await Swal.fire({
+            title: 'Respaldo descargado correctamente',
+            text: '¿Qué deseas hacer con el archivo?',
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Sí, restaurar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Restaurar en la BD local',
+            cancelButtonText: 'Solo descargar archivo',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)'
         });
 
-        if (!confirm.isConfirmed) return;
+        if (action.isConfirmed) {
+            // --- RESTAURAR en IndexedDB ---
+            Swal.fire({
+                title: 'Restaurando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
 
-        Swal.fire({
-            title: 'Restaurando...',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
-        const storeNames = Object.keys(jsonData).filter(key => key !== '_metadata');
-        const currentStoreNames = Array.from(db.db.objectStoreNames);
-        for (const storeName of storeNames) {
-            if (!currentStoreNames.includes(storeName)) continue;
-            await db.clear(storeName);
-            for (const record of jsonData[storeName] || []) {
-                await db.put(storeName, record);
+            const storeNames = Object.keys(jsonData).filter(key => key !== '_metadata');
+            const currentStoreNames = Array.from(db.db.objectStoreNames);
+            for (const storeName of storeNames) {
+                if (!currentStoreNames.includes(storeName)) continue;
+                await db.clear(storeName);
+                for (const record of jsonData[storeName] || []) {
+                    await db.put(storeName, record);
+                }
             }
-        }
 
-        Swal.fire({
-            icon: 'success',
-            title: '✅ Respaldo restaurado',
-            text: 'Los datos han sido restaurados exitosamente.',
-            timer: 3000,
-            timerProgressBar: true
-        });
+            // Limpiar bandera de cambios pendientes
+            localStorage.removeItem('sync_pending');
+            if (window.actualizarBadge) window.actualizarBadge();
+            // Actualizar fecha de última subida (para reiniciar el contador)
+            localStorage.setItem('sync_last_upload', new Date().toISOString());
 
-        if (window.app) {
-            await window.app.loadData();
-            await window.app.render();
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Respaldo restaurado',
+                text: 'Los datos han sido restaurados exitosamente.',
+                timer: 3000,
+                timerProgressBar: true
+            });
+
+            if (window.app) {
+                await window.app.loadData();
+                await window.app.render();
+            }
+        } else {
+            // --- SOLO DESCARGAR como archivo .json ---
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const urlBlob = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = urlBlob;
+            a.download = `backup_${correo}_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(urlBlob);
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Archivo descargado',
+                text: `Respaldo guardado como ${a.download}`,
+                timer: 3000,
+                timerProgressBar: true
+            });
         }
 
     } catch (error) {
@@ -641,4 +715,32 @@ function mostrarOpcionesBaseDatos() {
         color: 'var(--text-primary)',
         width: '440px'
     });
+}
+
+// ============================================================
+// 9. FUNCIÓN AUXILIAR PARA PEDIR CORREO (reutilizable)
+// ============================================================
+async function pedirCorreo() {
+    const result = await Swal.fire({
+        title: 'Correo electrónico para el respaldo',
+        input: 'email',
+        inputLabel: 'Correo',
+        inputPlaceholder: 'ejemplo@correo.com',
+        showCancelButton: true,
+        confirmButtonText: 'Continuar',
+        cancelButtonText: 'Cancelar',
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        inputValidator: (value) => {
+            if (!value) return 'Debes escribir un correo';
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                return 'Correo electrónico inválido';
+            }
+            return null;
+        }
+    });
+    if (result.isConfirmed && result.value) {
+        return result.value.trim();
+    }
+    return null;
 }

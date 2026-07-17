@@ -3,139 +3,132 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Consultar / Subir respaldo</title>
+    <title>Consultar respaldo - VS Code style</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ===== RESET Y ESTRUCTURA VS CODE ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1e1e2f;
             color: #cdd6f4;
-            padding: 24px;
-            min-height: 100vh;
-            transition: background 0.3s, color 0.3s;
-        }
-        body.light {
-            background: #f0f0f0;
-            color: #1e1e2f;
-        }
-        .container { max-width: 1400px; margin: 0 auto; }
-
-        /* HEADER */
-        .header {
+            height: 100vh;
+            overflow: hidden;
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #313244;
+            flex-direction: column;
         }
-        .header h1 {
-            font-size: 24px;
+        /* Barra de título superior */
+        .title-bar {
+            background: #252535;
+            padding: 6px 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            border-bottom: 1px solid #3a3a4a;
+            flex-shrink: 0;
+        }
+        .title-bar h1 {
+            font-size: 16px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: #f9e2af;
         }
-        .header h1 i { color: #89b4fa; }
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
+        .title-bar h1 i {
+            color: #89b4fa;
         }
-
-        /* FORMULARIOS */
-        .email-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            background: #313244;
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid #45475a;
+        .title-bar .spacer {
+            flex: 1;
         }
-        .email-form input {
+        .title-bar .email-form {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            background: #3a3a4a;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .title-bar .email-form input {
             background: transparent;
             border: none;
             color: #cdd6f4;
-            font-size: 14px;
-            padding: 6px 4px;
-            min-width: 220px;
+            font-size: 13px;
+            padding: 4px 0;
+            min-width: 180px;
             outline: none;
         }
-        .email-form input::placeholder { color: #6c7086; }
-        .email-form button {
+        .title-bar .email-form input::placeholder {
+            color: #6c7086;
+        }
+        .title-bar .email-form button {
             background: #89b4fa;
             border: none;
-            padding: 6px 18px;
-            border-radius: 30px;
+            padding: 2px 14px;
+            border-radius: 20px;
             font-weight: 600;
             color: #1e1e2f;
             cursor: pointer;
-            transition: background 0.2s;
+            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            transition: background 0.2s;
         }
-        .email-form button:hover { background: #b4cffa; }
-        .email-form button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .email-form button.upload {
-            background: #a6e3a1;
-            color: #1e1e2f;
+        .title-bar .email-form button:hover {
+            background: #b4cffa;
         }
-        .email-form button.upload:hover { background: #b8f0b3; }
-        .email-form button.danger {
-            background: #f38ba8;
-            color: #1e1e2f;
+        .title-bar .email-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        .email-form button.danger:hover { background: #f5a3bb; }
-
-        /* BOTÓN TEMA */
         .btn-tema {
-            background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(137,180,250,0.3);
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(137, 180, 250, 0.3);
             border-radius: 50%;
-            width: 42px;
-            height: 42px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #89b4fa;
-            font-size: 1.2rem;
             cursor: pointer;
             transition: all 0.3s;
+            flex-shrink: 0;
         }
         .btn-tema:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
             border-color: #89b4fa;
-            box-shadow: 0 0 20px rgba(137,180,250,0.3);
+            box-shadow: 0 0 20px rgba(137, 180, 250, 0.3);
         }
-
-        /* Estado subiendo */
+        /* Estado subiendo (gradiente vertical rojo) */
         .btn-tema.subiendo {
             border-radius: 30px !important;
             width: auto !important;
             height: auto !important;
-            padding: 6px 18px !important;
+            padding: 4px 14px !important;
             background: linear-gradient(180deg, #ff0040, #ff6b00, #ffcc00) !important;
             background-size: 100% 300% !important;
             animation: gradient-vertical 2s ease infinite, pulse-subida 1.2s ease-in-out infinite;
             border: 2px solid #fff !important;
-            box-shadow: 0 0 40px rgba(255,0,64,0.7), 0 0 80px rgba(255,107,0,0.4) !important;
+            box-shadow: 0 0 40px rgba(255, 0, 64, 0.7), 0 0 80px rgba(255, 107, 0, 0.4) !important;
             color: #1e1e2f !important;
             font-weight: 700;
-            font-size: 0.85rem;
-            gap: 8px;
+            font-size: 0.8rem;
+            gap: 6px;
         }
-        .btn-tema.subiendo i { animation: spin 1.2s linear infinite !important; }
+        .btn-tema.subiendo i {
+            animation: spin 1.2s linear infinite !important;
+        }
         .btn-tema.subiendo::after {
             content: "Subiendo";
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             color: #1e1e2f;
             margin-left: 4px;
@@ -146,123 +139,170 @@
             100% { background-position: 0% 0%; }
         }
         @keyframes pulse-subida {
-            0% { box-shadow: 0 0 20px rgba(255,0,64,0.4), 0 0 40px rgba(255,107,0,0.2); }
-            50% { box-shadow: 0 0 50px rgba(255,0,64,0.9), 0 0 100px rgba(255,107,0,0.6); }
-            100% { box-shadow: 0 0 20px rgba(255,0,64,0.4), 0 0 40px rgba(255,107,0,0.2); }
+            0% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.4), 0 0 40px rgba(255, 107, 0, 0.2); }
+            50% { box-shadow: 0 0 50px rgba(255, 0, 64, 0.9), 0 0 100px rgba(255, 107, 0, 0.6); }
+            100% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.4), 0 0 40px rgba(255, 107, 0, 0.2); }
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* RESUMEN */
-        .summary {
+        /* ===== CUERPO PRINCIPAL (VS CODE LAYOUT) ===== */
+        .main-body {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px 24px;
-            background: #313244;
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #45475a;
-        }
-        .summary-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        .summary-item .badge {
-            background: #45475a;
-            padding: 2px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            color: #f9e2af;
-        }
-
-        /* BUSCADOR */
-        .search-bar {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .search-bar input {
             flex: 1;
-            min-width: 200px;
-            padding: 10px 16px;
-            border-radius: 30px;
-            border: 1px solid #45475a;
-            background: #313244;
-            color: #cdd6f4;
-            font-size: 14px;
-            outline: none;
-            transition: border 0.3s;
-        }
-        .search-bar input:focus { border-color: #89b4fa; }
-        .search-bar input::placeholder { color: #6c7086; }
-        .search-bar .count-result {
-            font-size: 13px;
-            color: #a6adc8;
-            white-space: nowrap;
+            overflow: hidden;
         }
 
-        /* TARJETAS DE SECCIÓN */
-        .section-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-        }
-        .section-card {
-            background: #313244;
-            border-radius: 12px;
-            border: 1px solid #45475a;
+        /* SIDEBAR IZQUIERDA (Explorador) */
+        .sidebar-explorer {
+            width: 260px;
+            background: #252535;
+            border-right: 1px solid #3a3a4a;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
-            transition: all 0.2s;
-            cursor: pointer;
+            flex-shrink: 0;
         }
-        .section-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }
-        .section-card-header {
-            padding: 16px 20px;
-            background: #45475a;
+        .sidebar-explorer .header {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6c7086;
+            border-bottom: 1px solid #3a3a4a;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            user-select: none;
         }
-        .section-card-header .section-name {
-            font-weight: 600;
-            font-size: 16px;
+        .sidebar-explorer .header .badge {
+            background: #3a3a4a;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            color: #a6adc8;
+        }
+        .sidebar-explorer .tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .sidebar-explorer .tree .tree-item {
+            cursor: pointer;
+            padding: 4px 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 13px;
+            color: #cdd6f4;
+            border-left: 2px solid transparent;
+            transition: background 0.15s;
         }
-        .section-card-header .section-name i { color: #f9e2af; }
-        .section-card-header .section-badge {
-            background: #1e1e2f;
-            padding: 2px 12px;
-            border-radius: 20px;
+        .sidebar-explorer .tree .tree-item:hover {
+            background: #3a3a4a;
+        }
+        .sidebar-explorer .tree .tree-item.active {
+            background: #3a3a4a;
+            border-left-color: #89b4fa;
+        }
+        .sidebar-explorer .tree .tree-item .icon {
+            width: 18px;
+            text-align: center;
+            color: #f9e2af;
+        }
+        .sidebar-explorer .tree .tree-item .chevron {
+            margin-left: auto;
+            color: #6c7086;
+            transition: transform 0.2s;
             font-size: 12px;
-            color: #a6e3a1;
         }
-        .section-card-body {
-            padding: 16px 20px;
+        .sidebar-explorer .tree .tree-item .chevron.open {
+            transform: rotate(90deg);
+        }
+        .sidebar-explorer .tree .tree-item .count {
+            font-size: 11px;
+            color: #6c7086;
+            margin-left: 4px;
+        }
+        .sidebar-explorer .tree .tree-children {
+            padding-left: 24px;
             display: none;
-            border-top: 1px solid #45475a;
         }
-        .section-card-body.open { display: block; }
+        .sidebar-explorer .tree .tree-children.open {
+            display: block;
+        }
+        .sidebar-explorer .tree .tree-children .tree-item {
+            font-size: 12px;
+            padding: 3px 12px;
+        }
 
-        /* TABLAS DENTRO DE CADA SECCIÓN */
-        .section-card-body .sub-table {
-            margin-top: 16px;
-            overflow-x: auto;
+        /* PANEL PRINCIPAL (contenido y pestañas) */
+        .panel-principal {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #1e1e2f;
         }
-        .section-card-body .sub-table:first-child { margin-top: 0; }
-        .section-card-body .sub-table h4 {
+        /* Pestañas */
+        .tabs-bar {
+            display: flex;
+            background: #252535;
+            border-bottom: 1px solid #3a3a4a;
+            padding: 0 8px;
+            overflow-x: auto;
+            flex-shrink: 0;
+            min-height: 36px;
+        }
+        .tabs-bar .tab {
+            padding: 6px 16px;
+            font-size: 12px;
+            color: #a6adc8;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .tabs-bar .tab:hover {
+            color: #cdd6f4;
+        }
+        .tabs-bar .tab.active {
+            color: #cdd6f4;
+            border-bottom-color: #89b4fa;
+            background: #2a2a3a;
+        }
+        .tabs-bar .tab .close-tab {
+            margin-left: 4px;
+            color: #6c7086;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .tabs-bar .tab .close-tab:hover {
+            color: #f38ba8;
+        }
+
+        /* Contenido de pestañas (scroll) */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+        .tab-content .data-view {
+            display: none;
+        }
+        .tab-content .data-view.active {
+            display: block;
+        }
+
+        /* ===== TABLAS ===== */
+        .table-container {
+            margin-bottom: 20px;
+        }
+        .table-container h3 {
             font-size: 14px;
             color: #89b4fa;
             margin-bottom: 6px;
@@ -270,37 +310,105 @@
             align-items: center;
             gap: 8px;
         }
-        .section-card-body .sub-table h4 .count {
+        .table-container h3 .count {
             font-weight: 400;
             color: #a6adc8;
             font-size: 12px;
         }
-        .section-card-body table {
+        .table-container table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
+            background: #2a2a3a;
+            border-radius: 4px;
+            overflow: hidden;
         }
-        .section-card-body th {
+        .table-container th {
             text-align: left;
-            padding: 4px 8px;
-            background: #1e1e2f;
-            color: #89b4fa;
-            border-bottom: 1px solid #45475a;
+            padding: 6px 10px;
+            background: #3a3a4a;
+            color: #a6adc8;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
             white-space: nowrap;
         }
-        .section-card-body td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #45475a;
+        .table-container th:hover {
+            background: #4a4a5a;
+        }
+        .table-container th .sort-icon {
+            margin-left: 4px;
+            font-size: 10px;
+            color: #6c7086;
+        }
+        .table-container td {
+            padding: 4px 10px;
+            border-bottom: 1px solid #3a3a4a;
             vertical-align: top;
             word-break: break-word;
         }
-        .section-card-body tr:hover td { background: rgba(137,180,250,0.05); }
-        .section-card-body .empty-row { color: #6c7086; font-style: italic; }
-
-        /* ESTADOS */
-        .empty-state {
+        .table-container tr:hover td {
+            background: rgba(137, 180, 250, 0.05);
+        }
+        .table-container .empty-row {
+            color: #6c7086;
+            font-style: italic;
             text-align: center;
-            padding: 40px 20px;
+            padding: 16px;
+        }
+
+        /* ===== BUSCADOR ===== */
+        .search-box {
+            padding: 6px 16px;
+            background: #252535;
+            border-bottom: 1px solid #3a3a4a;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .search-box input {
+            flex: 1;
+            background: #3a3a4a;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: #cdd6f4;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-box input::placeholder {
+            color: #6c7086;
+        }
+        .search-box .result-count {
+            font-size: 12px;
+            color: #a6adc8;
+            white-space: nowrap;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e2f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #45475a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #585b70;
+        }
+
+        /* ===== ESTADO VACÍO ===== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
             color: #6c7086;
         }
         .empty-state i {
@@ -308,109 +416,99 @@
             margin-bottom: 16px;
             opacity: 0.3;
         }
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
+        .empty-state p {
+            font-size: 14px;
         }
-        .loading i { font-size: 40px; color: #f9e2af; }
 
-        /* TEMA CLARO */
-        body.light .summary,
-        body.light .section-card,
-        body.light .search-bar input,
-        body.light .email-form {
-            background: #ffffff;
-            border-color: #d0d0d0;
-        }
-        body.light .section-card-header { background: #e0e0e0; }
-        body.light .section-card-body th {
-            background: #f0f0f0;
-            color: #1e1e2f;
-        }
-        body.light .section-card-body td { border-color: #d0d0d0; }
-        body.light .section-card-body tr:hover td { background: rgba(0,0,0,0.03); }
-        body.light .btn-tema {
-            border-color: #aaa;
-            color: #1e1e2f;
-        }
-        body.light .btn-tema:hover { border-color: #1e1e2f; }
-
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 700px) {
-            .header { flex-direction: column; align-items: stretch; }
-            .email-form { flex-wrap: wrap; border-radius: 12px; padding: 12px; }
-            .email-form input { min-width: 100%; }
-            .email-form button { width: 100%; justify-content: center; }
-            .section-grid { grid-template-columns: 1fr; }
+            .sidebar-explorer {
+                width: 200px;
+            }
+            .title-bar .email-form input {
+                min-width: 100px;
+            }
+        }
+        @media (max-width: 550px) {
+            .main-body {
+                flex-direction: column;
+            }
+            .sidebar-explorer {
+                width: 100%;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #3a3a4a;
+            }
+            .title-bar {
+                flex-wrap: wrap;
+            }
+            .title-bar .email-form {
+                flex: 1;
+                min-width: 200px;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="container" id="app">
 
-        <!-- HEADER -->
-        <div class="header">
-            <h1>
-                <i class="fas fa-cloud-download-alt"></i>
-                Gestor de respaldos
-            </h1>
-            <div class="header-actions">
-                <form class="email-form" id="emailForm" onsubmit="consultar(event)">
-                    <input type="email" id="emailInput" placeholder="ejemplo@correo.com" value="test@ejemplo.com" required />
-                    <button type="submit" id="btnConsultar">
-                        <i class="fas fa-search"></i> Consultar
-                    </button>
-                    <button type="button" class="upload" onclick="subirArchivo()">
-                        <i class="fas fa-upload"></i> Subir
-                    </button>
-                    <button type="button" class="danger" onclick="limpiarVista()">
-                        <i class="fas fa-times"></i> Limpiar
-                    </button>
-                </form>
-                <div class="btn-tema" id="themeToggle" title="Cambiar tema">
-                    <i class="fas fa-palette"></i>
+<body>
+
+    <!-- BARRA DE TÍTULO -->
+    <div class="title-bar">
+        <h1><i class="fas fa-cloud-download-alt"></i> Respaldo Viewer</h1>
+        <div class="spacer"></div>
+        <form class="email-form" id="emailForm" onsubmit="consultar(event)">
+            <input type="email" id="emailInput" placeholder="correo@ejemplo.com" value="test@ejemplo.com" required />
+            <button type="submit" id="btnConsultar">
+                <i class="fas fa-search"></i> Consultar
+            </button>
+        </form>
+        <div class="btn-tema" id="themeToggle" title="Cambiar tema">
+            <i class="fas fa-palette"></i>
+        </div>
+    </div>
+
+    <!-- CUERPO PRINCIPAL -->
+    <div class="main-body">
+
+        <!-- SIDEBAR EXPLORADOR -->
+        <div class="sidebar-explorer" id="sidebar">
+            <div class="header">
+                <span>SECCIONES</span>
+                <span class="badge" id="sectionCount">0</span>
+            </div>
+            <div class="tree" id="treeContainer">
+                <div style="padding:20px; text-align:center; color:#6c7086; font-size:13px;">
+                    <i class="fas fa-spinner fa-pulse"></i> Cargando...
                 </div>
             </div>
         </div>
 
-        <!-- RESUMEN -->
-        <div class="summary" id="summaryArea" style="display:none;">
-            <div class="summary-item">
-                <i class="fas fa-database" style="color:#89b4fa;"></i>
-                Secciones: <span class="badge" id="totalSections">0</span>
+        <!-- PANEL PRINCIPAL -->
+        <div class="panel-principal">
+            <!-- Pestañas -->
+            <div class="tabs-bar" id="tabsBar">
+                <div class="tab active" data-tab="welcome">
+                    <i class="fas fa-home"></i> Inicio
+                </div>
             </div>
-            <div class="summary-item">
-                <i class="fas fa-list" style="color:#a6e3a1;"></i>
-                Registros: <span class="badge" id="totalRecords">0</span>
-            </div>
-            <div class="summary-item">
-                <i class="fas fa-user" style="color:#f9e2af;"></i>
-                Correo: <span class="badge" id="emailDisplay">—</span>
-            </div>
-            <div class="summary-item">
-                <i class="fas fa-calendar-alt" style="color:#cba6f7;"></i>
-                Exportado: <span class="badge" id="exportDate">—</span>
-            </div>
-        </div>
 
-        <!-- BUSCADOR -->
-        <div class="search-bar" id="searchBar" style="display:none;">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar en todas las secciones..." oninput="filtrar()" />
-            <span class="count-result" id="resultCount">0 coincidencias</span>
-        </div>
-
-        <!-- CONTENEDOR DE TARJETAS -->
-        <div id="dataContainer">
-            <div class="empty-state">
-                <i class="fas fa-cloud-download-alt"></i>
-                <p>Ingresa un correo y haz clic en <strong>Consultar</strong></p>
-                <p style="font-size:13px; color:#6c7086;">O sube un archivo JSON para actualizar el servidor</p>
+            <!-- Buscador -->
+            <div class="search-box" id="searchBox" style="display:none;">
+                <i class="fas fa-search" style="color:#6c7086;"></i>
+                <input type="text" id="globalSearch" placeholder="Buscar en todas las tablas..." oninput="aplicarBusquedaGlobal()" />
+                <span class="result-count" id="globalCount">0 coincidencias</span>
             </div>
-        </div>
 
-        <!-- LOADING -->
-        <div id="loadingState" class="loading" style="display:none;">
-            <i class="fas fa-spinner fa-pulse"></i>
-            <p style="margin-top:12px;">Cargando datos del servidor...</p>
+            <!-- Contenido de pestañas -->
+            <div class="tab-content" id="tabContent">
+                <div class="data-view active" id="view-welcome">
+                    <div class="empty-state">
+                        <i class="fas fa-cloud-download-alt"></i>
+                        <p>Ingresa un correo y haz clic en <strong>Consultar</strong></p>
+                        <p style="font-size:13px; color:#6c7086;">Los datos se organizarán en pestañas por sección</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -421,48 +519,42 @@
         const API_KEY = 'miClaveSuperSecreta123';
         const BASE_URL = 'https://educr.app/databaseJSON/';
         const DOWNLOAD_URL = BASE_URL + 'descargarJSON.php';
-        const INSERT_URL = BASE_URL + 'insert.php';
 
         // ============================================================
-        // DOM ELEMENTS
+        // DOM
         // ============================================================
         const emailInput = document.getElementById('emailInput');
         const btnConsultar = document.getElementById('btnConsultar');
         const themeBtn = document.getElementById('themeToggle');
-        const dataContainer = document.getElementById('dataContainer');
-        const loadingState = document.getElementById('loadingState');
-        const summaryArea = document.getElementById('summaryArea');
-        const searchBar = document.getElementById('searchBar');
-        const searchInput = document.getElementById('searchInput');
-        const resultCount = document.getElementById('resultCount');
-        const totalSections = document.getElementById('totalSections');
-        const totalRecords = document.getElementById('totalRecords');
-        const emailDisplay = document.getElementById('emailDisplay');
-        const exportDate = document.getElementById('exportDate');
+        const treeContainer = document.getElementById('treeContainer');
+        const tabsBar = document.getElementById('tabsBar');
+        const tabContent = document.getElementById('tabContent');
+        const searchBox = document.getElementById('searchBox');
+        const globalSearch = document.getElementById('globalSearch');
+        const globalCount = document.getElementById('globalCount');
+        const sectionCount = document.getElementById('sectionCount');
 
         let rawData = null;
-        let sectionsData = {};
+        let sections = {};
         let sectionIds = [];
+        let activeTab = 'welcome';
+        let sortState = {}; // { tableId: { column: 'nombre', asc: true } }
 
         // ============================================================
         // CONSULTAR
         // ============================================================
         async function consultar(e) {
-            if (e) e.preventDefault();
+            e.preventDefault();
             const correo = emailInput.value.trim();
             if (!correo || !correo.includes('@')) {
-                alert('Ingresa un correo electrónico válido.');
+                alert('Correo inválido');
                 return;
             }
 
-            loadingState.style.display = 'block';
-            dataContainer.innerHTML = '';
-            summaryArea.style.display = 'none';
-            searchBar.style.display = 'none';
             btnConsultar.disabled = true;
-            btnConsultar.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Cargando...';
+            btnConsultar.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
 
-            // Feedback visual
+            // Efecto visual en botón de tema
             if (themeBtn) {
                 window._themeOriginal = themeBtn.innerHTML;
                 themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
@@ -471,35 +563,21 @@
 
             try {
                 const url = `${DOWNLOAD_URL}?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
-                const response = await fetch(url);
-                if (response.status === 404) {
-                    throw new Error('No se encontró respaldo para este correo.');
+                const resp = await fetch(url);
+                if (resp.status === 404) throw new Error('No se encontró respaldo.');
+                if (!resp.ok) {
+                    const txt = await resp.text();
+                    throw new Error(`Error ${resp.status}: ${txt}`);
                 }
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`Error ${response.status}: ${text}`);
-                }
-                const jsonText = await response.text();
+                const jsonText = await resp.text();
                 let parsed;
-                try { parsed = JSON.parse(jsonText); } catch { throw new Error('JSON inválido.'); }
-                if (!parsed || typeof parsed !== 'object') {
-                    throw new Error('Datos inválidos.');
-                }
+                try { parsed = JSON.parse(jsonText); } catch { throw new Error('JSON inválido'); }
                 rawData = parsed;
                 procesarDatos(rawData, correo);
-            } catch (error) {
-                console.error(error);
-                dataContainer.innerHTML = `
-                    <div class="empty-state" style="border-left:4px solid #f38ba8;">
-                        <i class="fas fa-exclamation-triangle" style="color:#f38ba8;"></i>
-                        <p style="color:#f38ba8; font-weight:600;">${error.message}</p>
-                        <p style="font-size:13px; color:#6c7086;">Verifica el correo o intenta más tarde.</p>
-                    </div>
-                `;
-                summaryArea.style.display = 'none';
-                searchBar.style.display = 'none';
+            } catch (err) {
+                alert('Error: ' + err.message);
+                console.error(err);
             } finally {
-                loadingState.style.display = 'none';
                 btnConsultar.disabled = false;
                 btnConsultar.innerHTML = '<i class="fas fa-search"></i> Consultar';
                 if (themeBtn && window._themeOriginal) {
@@ -511,26 +589,19 @@
         }
 
         // ============================================================
-        // PROCESAR DATOS (AGRUPAR POR SECCIÓN)
+        // PROCESAR DATOS (igual que antes)
         // ============================================================
         function procesarDatos(data, correo) {
             const secciones = data.secciones || [];
             if (secciones.length === 0) {
-                dataContainer.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-folder-open"></i>
-                        <p>No hay secciones en el respaldo.</p>
-                    </div>
-                `;
-                summaryArea.style.display = 'none';
-                searchBar.style.display = 'none';
+                treeContainer.innerHTML = `<div style="padding:20px; color:#6c7086;">No hay secciones</div>`;
                 return;
             }
 
-            sectionsData = {};
+            sections = {};
             for (const sec of secciones) {
                 const id = sec.id;
-                sectionsData[id] = {
+                sections[id] = {
                     nombre: sec.nombre || 'Sin nombre',
                     estudiantes: [],
                     trabajos: { cotidiano: [], tarea: [], examen: [], proyecto: [], rubro: [] },
@@ -542,15 +613,14 @@
                 };
             }
 
-            // Estudiantes
+            // Poblar estudiantes
             const estudiantes = data.estudiantes || [];
             for (const est of estudiantes) {
-                const secId = est.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].estudiantes.push(est);
+                const sid = est.seccionId;
+                if (sections[sid]) sections[sid].estudiantes.push(est);
             }
 
             // Trabajos
-            const tipos = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
             const storeMap = {
                 cotidiano: 'trabajos_cotidiano',
                 tarea: 'trabajos_tarea',
@@ -558,130 +628,206 @@
                 proyecto: 'proyectos',
                 rubro: 'trabajos_rubro'
             };
-            for (const tipo of tipos) {
-                const storeName = storeMap[tipo];
-                const items = data[storeName] || [];
+            for (const tipo of ['cotidiano','tarea','examen','proyecto','rubro']) {
+                const items = data[storeMap[tipo]] || [];
                 for (const item of items) {
-                    const secId = item.seccionId;
-                    if (sectionsData[secId]) sectionsData[secId].trabajos[tipo].push(item);
+                    const sid = item.seccionId;
+                    if (sections[sid]) sections[sid].trabajos[tipo].push(item);
                 }
             }
 
-            // Calificaciones (relacionadas por estudiante)
+            // Calificaciones
             const califs = data.calificaciones || [];
-            for (const calif of califs) {
-                const estId = calif.estudianteId;
-                const est = estudiantes.find(e => e.id === estId);
-                if (est) {
-                    const secId = est.seccionId;
-                    if (sectionsData[secId]) sectionsData[secId].calificaciones.push(calif);
+            for (const c of califs) {
+                const est = estudiantes.find(e => e.id === c.estudianteId);
+                if (est && sections[est.seccionId]) {
+                    sections[est.seccionId].calificaciones.push(c);
                 }
             }
 
             // Asistencia
-            const asistencias = data.asistencia || [];
-            for (const asis of asistencias) {
-                const secId = asis.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].asistencia.push(asis);
+            const asis = data.asistencia || [];
+            for (const a of asis) {
+                if (sections[a.seccionId]) sections[a.seccionId].asistencia.push(a);
             }
 
             // Bitácora
-            const bitacora = data.bitacora || [];
-            for (const bit of bitacora) {
-                const secId = bit.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].bitacora.push(bit);
+            const bits = data.bitacora || [];
+            for (const b of bits) {
+                if (sections[b.seccionId]) sections[b.seccionId].bitacora.push(b);
             }
 
             // Plan
             const enlaces = data.plan_enlaces || [];
-            for (const enl of enlaces) {
-                const secId = enl.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].plan.enlaces.push(enl);
+            for (const e of enlaces) {
+                if (sections[e.seccionId]) sections[e.seccionId].plan.enlaces.push(e);
             }
-            const contenido = data.plan_contenido || [];
-            for (const cont of contenido) {
-                const secId = cont.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].plan.contenido.push(cont);
+            const conts = data.plan_contenido || [];
+            for (const c of conts) {
+                if (sections[c.seccionId]) sections[c.seccionId].plan.contenido.push(c);
             }
 
             // Porcentajes
-            const porcentajes = data.porcentajes || [];
-            for (const pct of porcentajes) {
-                const secId = pct.seccionId;
-                if (sectionsData[secId]) sectionsData[secId].porcentajes = pct.porcentajes;
+            const pcts = data.porcentajes || [];
+            for (const p of pcts) {
+                if (sections[p.seccionId]) sections[p.seccionId].porcentajes = p.porcentajes;
             }
 
-            sectionIds = Object.keys(sectionsData);
+            sectionIds = Object.keys(sections);
+            sectionCount.textContent = sectionIds.length;
 
-            const totalRegistros = Object.values(data).reduce((acc, arr) => {
-                if (Array.isArray(arr)) return acc + arr.length;
-                return acc;
-            }, 0);
-
-            totalSections.textContent = sectionIds.length;
-            totalRecords.textContent = totalRegistros;
-            emailDisplay.textContent = correo;
-            const meta = data._metadata || {};
-            exportDate.textContent = meta.exportDate ? new Date(meta.exportDate).toLocaleString() : '—';
-            summaryArea.style.display = 'flex';
-            searchBar.style.display = 'flex';
-
-            renderTarjetas();
+            renderTree();
+            // Abrir primera sección automáticamente
+            if (sectionIds.length > 0) {
+                abrirSeccion(sectionIds[0]);
+            }
+            searchBox.style.display = 'flex';
         }
 
         // ============================================================
-        // RENDER TARJETAS
+        // RENDER ÁRBOL (SIDEBAR)
         // ============================================================
-        function renderTarjetas() {
-            let html = '<div class="section-grid">';
+        function renderTree() {
+            let html = '';
             for (const id of sectionIds) {
-                const sec = sectionsData[id];
-                const totalEstudiantes = sec.estudiantes.length;
-                const totalTrabajos = Object.values(sec.trabajos).reduce((a, b) => a + b.length, 0);
+                const sec = sections[id];
+                const total = sec.estudiantes.length + Object.values(sec.trabajos).reduce((a,b) => a+b.length, 0) +
+                             sec.calificaciones.length + sec.asistencia.length + sec.bitacora.length +
+                             sec.plan.enlaces.length + sec.plan.contenido.length;
                 html += `
-                    <div class="section-card" data-section-id="${id}" onclick="toggleCard(this)">
-                        <div class="section-card-header">
-                            <div class="section-name">
-                                <i class="fas fa-folder"></i>
-                                ${escapeHtml(sec.nombre)}
-                            </div>
-                            <div class="section-badge">
-                                ${totalEstudiantes} estudiantes · ${totalTrabajos} trabajos
-                            </div>
-                        </div>
-                        <div class="section-card-body">
-                            ${renderSubTabla('Estudiantes', sec.estudiantes, ['id','nombre','apellidos','cedula','correo'])}
-                            ${renderSubTablaTrabajos(sec.trabajos)}
-                            ${renderSubTabla('Calificaciones', sec.calificaciones, ['estudianteId','trabajoId','tipoTrabajo','nota'])}
-                            ${renderSubTabla('Asistencia', sec.asistencia, ['fecha','estudianteId','estado','lecciones'])}
-                            ${renderSubTabla('Bitácora', sec.bitacora, ['id','titulo','contenido','fecha','timestamp'])}
-                            ${renderSubTabla('Plan - Enlaces', sec.plan.enlaces, ['id','nombre','url','tipo'])}
-                            ${renderSubTabla('Plan - Contenido', sec.plan.contenido, ['id','titulo','contenido','periodo','fecha'])}
-                            ${renderPorcentajes(sec.porcentajes)}
-                        </div>
+                    <div class="tree-item" data-section-id="${id}" onclick="abrirSeccion('${id}')">
+                        <span class="icon"><i class="fas fa-folder"></i></span>
+                        ${escapeHtml(sec.nombre)}
+                        <span class="count">(${total})</span>
+                        <span class="chevron"><i class="fas fa-chevron-right"></i></span>
                     </div>
                 `;
             }
-            html += '</div>';
-            dataContainer.innerHTML = html;
-            if (searchInput.value.trim()) filtrar();
-            else actualizarContador();
+            treeContainer.innerHTML = html;
         }
 
         // ============================================================
-        // SUBTABLAS
+        // ABRIR SECCIÓN (crea pestaña)
         // ============================================================
-        function renderSubTabla(titulo, items, columnas) {
-            if (!items || items.length === 0) return '';
-            let html = `
-                <div class="sub-table">
-                    <h4>${titulo} <span class="count">(${items.length})</span></h4>
-                    <table>
-                        <thead><tr><th>#</th>${columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-                        <tbody>
+        function abrirSeccion(sectionId) {
+            // Si ya existe una pestaña con esa sección, activarla
+            const existingTab = document.querySelector(`.tab[data-section="${sectionId}"]`);
+            if (existingTab) {
+                activarPestana(existingTab.dataset.tabId);
+                return;
+            }
+
+            const sec = sections[sectionId];
+            if (!sec) return;
+
+            // Crear ID único para la pestaña
+            const tabId = 'sec_' + sectionId;
+
+            // Crear pestaña
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.dataset.section = sectionId;
+            tab.dataset.tabId = tabId;
+            tab.innerHTML = `
+                <i class="fas fa-folder"></i> ${escapeHtml(sec.nombre)}
+                <span class="close-tab" onclick="event.stopPropagation(); cerrarPestana('${tabId}')">&times;</span>
             `;
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
+            tab.onclick = () => activarPestana(tabId);
+            tabsBar.appendChild(tab);
+
+            // Crear contenido
+            const view = document.createElement('div');
+            view.className = 'data-view';
+            view.id = 'view-' + tabId;
+            view.innerHTML = generarContenidoSeccion(sectionId);
+            tabContent.appendChild(view);
+
+            // Activar
+            activarPestana(tabId);
+            // Aplicar búsqueda global si hay texto
+            if (globalSearch.value.trim()) {
+                aplicarBusquedaGlobal();
+            }
+        }
+
+        // ============================================================
+        // GENERAR CONTENIDO DE SECCIÓN (tablas ordenables)
+        // ============================================================
+        function generarContenidoSeccion(sectionId) {
+            const sec = sections[sectionId];
+            let html = '';
+
+            // Tabla: Estudiantes
+            html += generarTabla('Estudiantes', sec.estudiantes, ['id','nombre','apellidos','cedula','correo'], 'estudiantes_' + sectionId);
+
+            // Trabajos por tipo
+            const tipos = [
+                { key: 'cotidiano', label: 'Trabajos Cotidianos' },
+                { key: 'tarea', label: 'Tareas' },
+                { key: 'examen', label: 'Exámenes' },
+                { key: 'proyecto', label: 'Proyectos' },
+                { key: 'rubro', label: 'Rubros' }
+            ];
+            for (const t of tipos) {
+                const items = sec.trabajos[t.key] || [];
+                const cols = ['id','nombre','fecha','puntosMax','activo'];
+                if (t.key === 'rubro') cols.push('porcentaje');
+                html += generarTabla(t.label, items, cols, t.key + '_' + sectionId);
+            }
+
+            // Calificaciones
+            html += generarTabla('Calificaciones', sec.calificaciones, ['estudianteId','trabajoId','tipoTrabajo','nota'], 'califs_' + sectionId);
+
+            // Asistencia
+            html += generarTabla('Asistencia', sec.asistencia, ['fecha','estudianteId','estado','lecciones'], 'asis_' + sectionId);
+
+            // Bitácora
+            html += generarTabla('Bitácora', sec.bitacora, ['id','titulo','contenido','fecha','timestamp'], 'bit_' + sectionId);
+
+            // Plan enlaces
+            html += generarTabla('Plan - Enlaces', sec.plan.enlaces, ['id','nombre','url','tipo'], 'plan_enl_' + sectionId);
+
+            // Plan contenido
+            html += generarTabla('Plan - Contenido', sec.plan.contenido, ['id','titulo','contenido','periodo','fecha'], 'plan_cont_' + sectionId);
+
+            // Porcentajes
+            if (sec.porcentajes) {
+                html += generarPorcentajes(sec.porcentajes);
+            }
+
+            return html;
+        }
+
+        // ============================================================
+        // GENERAR TABLA CON ORDENAMIENTO
+        // ============================================================
+        function generarTabla(titulo, items, columnas, tableId) {
+            if (!items || items.length === 0) return '';
+
+            // Inicializar estado de orden para esta tabla si no existe
+            if (!sortState[tableId]) {
+                sortState[tableId] = { column: columnas[0] || 'id', asc: true };
+            }
+
+            // Ordenar items según estado
+            const sorted = ordenarItems(items, columnas, sortState[tableId]);
+
+            let html = `<div class="table-container" data-table="${tableId}">
+                <h3>${titulo} <span class="count">(${items.length})</span></h3>
+                <table>
+                    <thead><tr>
+                        <th>#</th>`;
+            for (const col of columnas) {
+                const isSorted = sortState[tableId].column === col;
+                const icon = isSorted ? (sortState[tableId].asc ? '↑' : '↓') : '↕';
+                html += `<th onclick="ordenarTabla('${tableId}','${col}')">
+                            ${col} <span class="sort-icon">${icon}</span>
+                        </th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            for (let i = 0; i < sorted.length; i++) {
+                const item = sorted[i];
                 html += `<tr>`;
                 html += `<td>${i+1}</td>`;
                 for (const col of columnas) {
@@ -697,181 +843,137 @@
             return html;
         }
 
-        function renderSubTablaTrabajos(trabajos) {
-            const tipos = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
-            const labels = {
-                cotidiano: 'Trabajos Cotidianos',
-                tarea: 'Tareas',
-                examen: 'Exámenes',
-                proyecto: 'Proyectos',
-                rubro: 'Rubros'
-            };
-            let html = '';
-            for (const tipo of tipos) {
-                const items = trabajos[tipo] || [];
-                if (items.length === 0) continue;
-                const columnas = ['id', 'nombre', 'fecha', 'puntosMax', 'activo'];
-                if (tipo === 'rubro') columnas.push('porcentaje');
-                html += renderSubTabla(labels[tipo], items, columnas);
-            }
-            return html;
+        // ============================================================
+        // ORDENAR ITEMS
+        // ============================================================
+        function ordenarItems(items, columnas, state) {
+            const { column, asc } = state;
+            const sorted = [...items];
+            sorted.sort((a, b) => {
+                let va = a[column];
+                let vb = b[column];
+                if (va === null || va === undefined) va = '';
+                if (vb === null || vb === undefined) vb = '';
+                if (typeof va === 'string') va = va.toLowerCase();
+                if (typeof vb === 'string') vb = vb.toLowerCase();
+                if (va < vb) return asc ? -1 : 1;
+                if (va > vb) return asc ? 1 : -1;
+                return 0;
+            });
+            return sorted;
         }
 
-        function renderPorcentajes(pct) {
-            if (!pct) return '';
+        // ============================================================
+        // ORDENAR TABLA (click en cabecera)
+        // ============================================================
+        function ordenarTabla(tableId, column) {
+            const state = sortState[tableId];
+            if (state.column === column) {
+                state.asc = !state.asc;
+            } else {
+                state.column = column;
+                state.asc = true;
+            }
+            // Reconstruir solo la tabla afectada
+            const container = document.querySelector(`.table-container[data-table="${tableId}"]`);
+            if (!container) return;
+            // Buscar el sectionId a partir del id de la tabla
+            const sectionId = tableId.split('_').pop();
+            const sec = sections[sectionId];
+            if (!sec) return;
+
+            // Determinar qué tipo de datos es
+            let items = [];
+            let titulo = '';
+            let columnas = [];
+            const prefix = tableId.split('_')[0];
+            if (prefix === 'estudiantes') { items = sec.estudiantes; titulo = 'Estudiantes'; columnas = ['id','nombre','apellidos','cedula','correo']; }
+            else if (prefix === 'cotidiano') { items = sec.trabajos.cotidiano; titulo = 'Trabajos Cotidianos'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'tarea') { items = sec.trabajos.tarea; titulo = 'Tareas'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'examen') { items = sec.trabajos.examen; titulo = 'Exámenes'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'proyecto') { items = sec.trabajos.proyecto; titulo = 'Proyectos'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'rubro') { items = sec.trabajos.rubro; titulo = 'Rubros'; columnas = ['id','nombre','fecha','puntosMax','activo','porcentaje']; }
+            else if (prefix === 'califs') { items = sec.calificaciones; titulo = 'Calificaciones'; columnas = ['estudianteId','trabajoId','tipoTrabajo','nota']; }
+            else if (prefix === 'asis') { items = sec.asistencia; titulo = 'Asistencia'; columnas = ['fecha','estudianteId','estado','lecciones']; }
+            else if (prefix === 'bit') { items = sec.bitacora; titulo = 'Bitácora'; columnas = ['id','titulo','contenido','fecha','timestamp']; }
+            else if (prefix === 'plan_enl') { items = sec.plan.enlaces; titulo = 'Plan - Enlaces'; columnas = ['id','nombre','url','tipo']; }
+            else if (prefix === 'plan_cont') { items = sec.plan.contenido; titulo = 'Plan - Contenido'; columnas = ['id','titulo','contenido','periodo','fecha']; }
+            else return;
+
+            // Reconstruir solo esta tabla
+            const newHtml = generarTabla(titulo, items, columnas, tableId);
+            container.outerHTML = newHtml;
+            // Reaplicar búsqueda si hay texto
+            if (globalSearch.value.trim()) {
+                aplicarBusquedaGlobal();
+            }
+        }
+
+        // ============================================================
+        // PORCENTAJES
+        // ============================================================
+        function generarPorcentajes(pct) {
             let html = `
-                <div class="sub-table">
-                    <h4>Porcentajes</h4>
+                <div class="table-container">
+                    <h3>Porcentajes</h3>
                     <table>
                         <thead><tr><th>Tipo</th><th>Porcentaje</th><th>Activo</th></tr></thead>
                         <tbody>
             `;
             for (const [tipo, conf] of Object.entries(pct)) {
-                html += `<tr>
-                    <td>${escapeHtml(tipo)}</td>
-                    <td>${conf.porcentaje || 0}%</td>
-                    <td>${conf.activo ? '✅' : '❌'}</td>
-                </tr>`;
+                html += `<tr><td>${escapeHtml(tipo)}</td><td>${conf.porcentaje || 0}%</td><td>${conf.activo ? '✅' : '❌'}</td></tr>`;
             }
             html += `</tbody></table></div>`;
             return html;
         }
 
         // ============================================================
-        // TOGGLE CARD
+        // PESTAÑAS
         // ============================================================
-        function toggleCard(card) {
-            const body = card.querySelector('.section-card-body');
-            body.classList.toggle('open');
+        function activarPestana(tabId) {
+            // Desactivar todas
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.data-view').forEach(v => v.classList.remove('active'));
+
+            // Activar la seleccionada
+            const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+            if (tab) tab.classList.add('active');
+            const view = document.getElementById('view-' + tabId);
+            if (view) view.classList.add('active');
+            activeTab = tabId;
         }
 
-        // ============================================================
-        // FILTRAR
-        // ============================================================
-        function filtrar() {
-            const term = searchInput.value.trim().toLowerCase();
-            const cards = document.querySelectorAll('.section-card');
-            let visible = 0;
-            for (const card of cards) {
-                const text = card.textContent.toLowerCase();
-                const match = term === '' || text.includes(term);
-                card.style.display = match ? '' : 'none';
-                if (match) visible++;
-            }
-            resultCount.textContent = `${visible} de ${cards.length} secciones`;
-        }
-
-        function actualizarContador() {
-            const cards = document.querySelectorAll('.section-card');
-            const visible = document.querySelectorAll('.section-card[style*="display: none"]');
-            const visibles = cards.length - visible.length;
-            resultCount.textContent = `${visibles} de ${cards.length} secciones`;
-        }
-
-        // ============================================================
-        // SUBIR ARCHIVO (con selector de archivo)
-        // ============================================================
-        async function subirArchivo() {
-            // Crear input file oculto
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.click();
-
-            const file = await new Promise((resolve) => {
-                input.onchange = (e) => {
-                    if (e.target.files.length > 0) resolve(e.target.files[0]);
-                    else resolve(null);
-                };
-                input.oncancel = () => resolve(null);
-            });
-
-            if (!file) return;
-
-            // Leer archivo
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const jsonText = e.target.result;
-                try {
-                    const parsed = JSON.parse(jsonText);
-                    // Verificar estructura mínima
-                    if (!parsed._metadata) {
-                        alert('El archivo no parece ser un respaldo válido (falta _metadata).');
-                        return;
-                    }
-                    // Confirmar subida
-                    const confirm = confirm(`¿Subir el archivo "${file.name}" (${(file.size / 1024).toFixed(1)} KB) al servidor?`);
-                    if (!confirm) return;
-
-                    // Obtener correo actual
-                    const correo = emailInput.value.trim();
-                    if (!correo || !correo.includes('@')) {
-                        alert('Ingresa un correo electrónico válido primero.');
-                        return;
-                    }
-
-                    // Mostrar feedback visual
-                    if (themeBtn) {
-                        window._themeOriginal = themeBtn.innerHTML;
-                        themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
-                        themeBtn.classList.add('subiendo');
-                    }
-
-                    // Enviar
-                    const form = new URLSearchParams();
-                    form.append('api_key', API_KEY);
-                    form.append('correo', correo);
-                    form.append('json', jsonText);
-                    form.append('version', '1.0');
-
-                    const response = await fetch(INSERT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: form
-                    });
-
-                    const texto = await response.text();
-                    let jsonResp;
-                    try { jsonResp = JSON.parse(texto); } catch { jsonResp = { raw: texto }; }
-
-                    if (!response.ok) {
-                        throw new Error(jsonResp.error || `Error ${response.status}: ${texto}`);
-                    }
-
-                    // Éxito
-                    alert(`✅ Respaldo subido correctamente.`);
-                    // Opcional: recargar la vista con el nuevo respaldo
-                    await consultar(new Event('submit'));
-                } catch (err) {
-                    console.error(err);
-                    alert(`❌ Error al subir: ${err.message}`);
-                } finally {
-                    if (themeBtn && window._themeOriginal) {
-                        themeBtn.innerHTML = window._themeOriginal;
-                        themeBtn.classList.remove('subiendo');
-                        delete window._themeOriginal;
-                    }
+        function cerrarPestana(tabId) {
+            if (tabId === 'welcome') return;
+            const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+            const view = document.getElementById('view-' + tabId);
+            if (tab) tab.remove();
+            if (view) view.remove();
+            // Si la pestaña activa era esta, activar otra
+            if (activeTab === tabId) {
+                const firstTab = document.querySelector('.tab:not(.tab[data-tab-id="welcome"])');
+                if (firstTab) {
+                    activarPestana(firstTab.dataset.tabId);
+                } else {
+                    activarPestana('welcome');
                 }
-            };
-            reader.readAsText(file);
+            }
         }
 
         // ============================================================
-        // LIMPIAR VISTA
+        // BÚSQUEDA GLOBAL (filtra filas en todas las tablas visibles)
         // ============================================================
-        function limpiarVista() {
-            dataContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-cloud-download-alt"></i>
-                    <p>Ingresa un correo y haz clic en <strong>Consultar</strong></p>
-                    <p style="font-size:13px; color:#6c7086;">O sube un archivo JSON para actualizar el servidor</p>
-                </div>
-            `;
-            summaryArea.style.display = 'none';
-            searchBar.style.display = 'none';
-            rawData = null;
-            sectionsData = {};
-            sectionIds = [];
+        function aplicarBusquedaGlobal() {
+            const term = globalSearch.value.trim().toLowerCase();
+            const tables = document.querySelectorAll('.data-view.active .table-container table tbody tr');
+            let totalVisible = 0;
+            for (const row of tables) {
+                const text = row.textContent.toLowerCase();
+                const match = term === '' || text.includes(term);
+                row.style.display = match ? '' : 'none';
+                if (match) totalVisible++;
+            }
+            globalCount.textContent = `${totalVisible} coincidencias`;
         }
 
         // ============================================================
@@ -885,20 +987,20 @@
         }
 
         // ============================================================
-        // TEMA
+        // TEMA (CLARO/OSCURO)
         // ============================================================
-        document.getElementById('themeToggle')?.addEventListener('click', function() {
+        themeBtn.addEventListener('click', function() {
             document.body.classList.toggle('light');
         });
 
         // ============================================================
-        // ENTER
+        // ENTER para consultar
         // ============================================================
         emailInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') consultar(e);
         });
 
-        console.log('✅ Gestor de respaldos listo.');
+        console.log('✅ consultar_vscode.html cargado');
     </script>
 </body>
 </html>

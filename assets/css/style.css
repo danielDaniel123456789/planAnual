@@ -681,38 +681,79 @@ body {
     width: 24px;
 }
 
-/* ===== BOTÓN TEMA EN ESTADO DE SUBIDA ===== */
-#themeToggle.subiendo {
-    background: linear-gradient(135deg, #f9e2af, #f38ba8, #89b4fa) !important;
-    background-size: 300% 300% !important;
-    animation: gradient-subida 2s ease infinite, pulse-subida 1.2s ease-in-out infinite;
-    border-radius: 30px !important;
-    padding: 6px 16px !important;
-    border: 2px solid #fff !important;
-    box-shadow: 0 0 30px rgba(249, 226, 175, 0.7), 0 0 60px rgba(243, 139, 168, 0.4) !important;
-    color: #1e1e2f !important;
-    font-weight: 600 !important;
-    transform: scale(1.05);
+/* ===== BOTÓN DE SUBIDA (NORMAL) ===== */
+#themeToggle {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 107, 107, 0.4);
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
+    cursor: pointer;
+    color: #ff6b6b;
+    font-size: 1.2rem;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.15);
 }
 
-@keyframes gradient-subida {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+#themeToggle:hover {
+    transform: scale(1.15);
+    border-color: #ff6b6b;
+    box-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+    background: rgba(255, 107, 107, 0.15);
+}
+
+/* ===== ESTADO "SUBIENDO" - GRADIENTE VERTICAL ROJO ===== */
+#themeToggle.subiendo {
+    border-radius: 30px !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 8px 20px !important;
+    
+    /* Gradiente vertical: rojo → naranja → amarillo neón */
+    background: linear-gradient(180deg, #ff0040, #ff6b00, #ffcc00) !important;
+    background-size: 100% 300% !important; /* para animación vertical */
+    animation: gradient-vertical 2s ease infinite, pulse-subida 1.2s ease-in-out infinite;
+    
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 0 40px rgba(255, 0, 64, 0.7), 0 0 80px rgba(255, 107, 0, 0.4) !important;
+    color: #1e1e2f !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    gap: 8px !important;
+    transform: scale(1.02);
+}
+
+#themeToggle.subiendo i {
+    animation: spin 1.2s linear infinite !important;
+    font-size: 1.1rem !important;
+    color: #1e1e2f !important;
+}
+
+/* Texto "Subiendo" mediante pseudo-elemento */
+#themeToggle.subiendo::after {
+    content: "Subiendo";
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #1e1e2f;
+    margin-left: 4px;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes gradient-vertical {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
 }
 
 @keyframes pulse-subida {
-    0% { box-shadow: 0 0 20px rgba(249, 226, 175, 0.4), 0 0 40px rgba(243, 139, 168, 0.2); }
-    50% { box-shadow: 0 0 40px rgba(249, 226, 175, 0.8), 0 0 80px rgba(243, 139, 168, 0.4); }
-    100% { box-shadow: 0 0 20px rgba(249, 226, 175, 0.4), 0 0 40px rgba(243, 139, 168, 0.2); }
-}
-
-/* Spinner animado (reemplaza el ícono de paleta) */
-#themeToggle.subiendo i {
-    animation: spin 1s linear infinite;
-    font-size: 1.2rem;
-    margin-right: 6px;
+    0% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.4), 0 0 40px rgba(255, 107, 0, 0.2); }
+    50% { box-shadow: 0 0 50px rgba(255, 0, 64, 0.9), 0 0 100px rgba(255, 107, 0, 0.6); }
+    100% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.4), 0 0 40px rgba(255, 107, 0, 0.2); }
 }
 
 @keyframes spin {

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consultar / Subir respaldo</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e2f;
+            color: #cdd6f4;
+            padding: 24px;
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.light {
+            background: #f0f0f0;
+            color: #1e1e2f;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #313244;
+        }
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f9e2af;
+        }
+        .header h1 i { color: #89b4fa; }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* FORMULARIOS */
+        .email-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #313244;
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid #45475a;
+        }
+        .email-form input {
+            background: transparent;
+            border: none;
+            color: #cdd6f4;
+            font-size: 14px;
+            padding: 6px 4px;
+            min-width: 220px;
+            outline: none;
+        }
+        .email-form input::placeholder { color: #6c7086; }
+        .email-form button {
+            background: #89b4fa;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: 600;
+            color: #1e1e2f;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .email-form button:hover { background: #b4cffa; }
+        .email-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .email-form button.upload {
+            background: #a6e3a1;
+            color: #1e1e2f;
+        }
+        .email-form button.upload:hover { background: #b8f0b3; }
+        .email-form button.danger {
+            background: #f38ba8;
+            color: #1e1e2f;
+        }
+        .email-form button.danger:hover { background: #f5a3bb; }
+
+        /* BOTÓN TEMA */
+        .btn-tema {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(137,180,250,0.3);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #89b4fa;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-tema:hover {
+            transform: scale(1.1);
+            border-color: #89b4fa;
+            box-shadow: 0 0 20px rgba(137,180,250,0.3);
+        }
+
+        /* Estado subiendo */
+        .btn-tema.subiendo {
+            border-radius: 30px !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 6px 18px !important;
+            background: linear-gradient(180deg, #ff0040, #ff6b00, #ffcc00) !important;
+            background-size: 100% 300% !important;
+            animation: gradient-vertical 2s ease infinite, pulse-subida 1.2s ease-in-out infinite;
+            border: 2px solid #fff !important;
+            box-shadow: 0 0 40px rgba(255,0,64,0.7), 0 0 80px rgba(255,107,0,0.4) !important;
+            color: #1e1e2f !important;
+            font-weight: 700;
+            font-size: 0.85rem;
+            gap: 8px;
+        }
+        .btn-tema.subiendo i { animation: spin 1.2s linear infinite !important; }
+        .btn-tema.subiendo::after {
+            content: "Subiendo";
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e1e2f;
+            margin-left: 4px;
+        }
+        @keyframes gradient-vertical {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 0% 100%; }
+            100% { background-position: 0% 0%; }
+        }
+        @keyframes pulse-subida {
+            0% { box-shadow: 0 0 20px rgba(255,0,64,0.4), 0 0 40px rgba(255,107,0,0.2); }
+            50% { box-shadow: 0 0 50px rgba(255,0,64,0.9), 0 0 100px rgba(255,107,0,0.6); }
+            100% { box-shadow: 0 0 20px rgba(255,0,64,0.4), 0 0 40px rgba(255,107,0,0.2); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RESUMEN */
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+            background: #313244;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #45475a;
+        }
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .summary-item .badge {
+            background: #45475a;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #f9e2af;
+        }
+
+        /* BUSCADOR */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border-radius: 30px;
+            border: 1px solid #45475a;
+            background: #313244;
+            color: #cdd6f4;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.3s;
+        }
+        .search-bar input:focus { border-color: #89b4fa; }
+        .search-bar input::placeholder { color: #6c7086; }
+        .search-bar .count-result {
+            font-size: 13px;
+            color: #a6adc8;
+            white-space: nowrap;
+        }
+
+        /* TARJETAS DE SECCIÓN */
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+        .section-card {
+            background: #313244;
+            border-radius: 12px;
+            border: 1px solid #45475a;
+            overflow: hidden;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .section-card-header {
+            padding: 16px 20px;
+            background: #45475a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .section-card-header .section-name {
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-card-header .section-name i { color: #f9e2af; }
+        .section-card-header .section-badge {
+            background: #1e1e2f;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #a6e3a1;
+        }
+        .section-card-body {
+            padding: 16px 20px;
+            display: none;
+            border-top: 1px solid #45475a;
+        }
+        .section-card-body.open { display: block; }
+
+        /* TABLAS DENTRO DE CADA SECCIÓN */
+        .section-card-body .sub-table {
+            margin-top: 16px;
+            overflow-x: auto;
+        }
+        .section-card-body .sub-table:first-child { margin-top: 0; }
+        .section-card-body .sub-table h4 {
+            font-size: 14px;
+            color: #89b4fa;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-card-body .sub-table h4 .count {
+            font-weight: 400;
+            color: #a6adc8;
+            font-size: 12px;
+        }
+        .section-card-body table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .section-card-body th {
+            text-align: left;
+            padding: 4px 8px;
+            background: #1e1e2f;
+            color: #89b4fa;
+            border-bottom: 1px solid #45475a;
+            white-space: nowrap;
+        }
+        .section-card-body td {
+            padding: 3px 8px;
+            border-bottom: 1px solid #45475a;
+            vertical-align: top;
+            word-break: break-word;
+        }
+        .section-card-body tr:hover td { background: rgba(137,180,250,0.05); }
+        .section-card-body .empty-row { color: #6c7086; font-style: italic; }
+
+        /* ESTADOS */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c7086;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .loading i { font-size: 40px; color: #f9e2af; }
+
+        /* TEMA CLARO */
+        body.light .summary,
+        body.light .section-card,
+        body.light .search-bar input,
+        body.light .email-form {
+            background: #ffffff;
+            border-color: #d0d0d0;
+        }
+        body.light .section-card-header { background: #e0e0e0; }
+        body.light .section-card-body th {
+            background: #f0f0f0;
+            color: #1e1e2f;
+        }
+        body.light .section-card-body td { border-color: #d0d0d0; }
+        body.light .section-card-body tr:hover td { background: rgba(0,0,0,0.03); }
+        body.light .btn-tema {
+            border-color: #aaa;
+            color: #1e1e2f;
+        }
+        body.light .btn-tema:hover { border-color: #1e1e2f; }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; align-items: stretch; }
+            .email-form { flex-wrap: wrap; border-radius: 12px; padding: 12px; }
+            .email-form input { min-width: 100%; }
+            .email-form button { width: 100%; justify-content: center; }
+            .section-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-cloud-download-alt"></i>
+                Gestor de respaldos
+            </h1>
+            <div class="header-actions">
+                <form class="email-form" id="emailForm" onsubmit="consultar(event)">
+                    <input type="email" id="emailInput" placeholder="ejemplo@correo.com" value="test@ejemplo.com" required />
+                    <button type="submit" id="btnConsultar">
+                        <i class="fas fa-search"></i> Consultar
+                    </button>
+                    <button type="button" class="upload" onclick="subirArchivo()">
+                        <i class="fas fa-upload"></i> Subir
+                    </button>
+                    <button type="button" class="danger" onclick="limpiarVista()">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </form>
+                <div class="btn-tema" id="themeToggle" title="Cambiar tema">
+                    <i class="fas fa-palette"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="summary" id="summaryArea" style="display:none;">
+            <div class="summary-item">
+                <i class="fas fa-database" style="color:#89b4fa;"></i>
+                Secciones: <span class="badge" id="totalSections">0</span>
+            </div>
+            <div class="summary-item">
+                <i class="fas fa-list" style="color:#a6e3a1;"></i>
+                Registros: <span class="badge" id="totalRecords">0</span>
+            </div>
+            <div class="summary-item">
+                <i class="fas fa-user" style="color:#f9e2af;"></i>
+                Correo: <span class="badge" id="emailDisplay">—</span>
+            </div>
+            <div class="summary-item">
+                <i class="fas fa-calendar-alt" style="color:#cba6f7;"></i>
+                Exportado: <span class="badge" id="exportDate">—</span>
+            </div>
+        </div>
+
+        <!-- BUSCADOR -->
+        <div class="search-bar" id="searchBar" style="display:none;">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar en todas las secciones..." oninput="filtrar()" />
+            <span class="count-result" id="resultCount">0 coincidencias</span>
+        </div>
+
+        <!-- CONTENEDOR DE TARJETAS -->
+        <div id="dataContainer">
+            <div class="empty-state">
+                <i class="fas fa-cloud-download-alt"></i>
+                <p>Ingresa un correo y haz clic en <strong>Consultar</strong></p>
+                <p style="font-size:13px; color:#6c7086;">O sube un archivo JSON para actualizar el servidor</p>
+            </div>
+        </div>
+
+        <!-- LOADING -->
+        <div id="loadingState" class="loading" style="display:none;">
+            <i class="fas fa-spinner fa-pulse"></i>
+            <p style="margin-top:12px;">Cargando datos del servidor...</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const API_KEY = 'miClaveSuperSecreta123';
+        const BASE_URL = 'https://educr.app/databaseJSON/';
+        const DOWNLOAD_URL = BASE_URL + 'descargarJSON.php';
+        const INSERT_URL = BASE_URL + 'insert.php';
+
+        // ============================================================
+        // DOM ELEMENTS
+        // ============================================================
+        const emailInput = document.getElementById('emailInput');
+        const btnConsultar = document.getElementById('btnConsultar');
+        const themeBtn = document.getElementById('themeToggle');
+        const dataContainer = document.getElementById('dataContainer');
+        const loadingState = document.getElementById('loadingState');
+        const summaryArea = document.getElementById('summaryArea');
+        const searchBar = document.getElementById('searchBar');
+        const searchInput = document.getElementById('searchInput');
+        const resultCount = document.getElementById('resultCount');
+        const totalSections = document.getElementById('totalSections');
+        const totalRecords = document.getElementById('totalRecords');
+        const emailDisplay = document.getElementById('emailDisplay');
+        const exportDate = document.getElementById('exportDate');
+
+        let rawData = null;
+        let sectionsData = {};
+        let sectionIds = [];
+
+        // ============================================================
+        // CONSULTAR
+        // ============================================================
+        async function consultar(e) {
+            if (e) e.preventDefault();
+            const correo = emailInput.value.trim();
+            if (!correo || !correo.includes('@')) {
+                alert('Ingresa un correo electrónico válido.');
+                return;
+            }
+
+            loadingState.style.display = 'block';
+            dataContainer.innerHTML = '';
+            summaryArea.style.display = 'none';
+            searchBar.style.display = 'none';
+            btnConsultar.disabled = true;
+            btnConsultar.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Cargando...';
+
+            // Feedback visual
+            if (themeBtn) {
+                window._themeOriginal = themeBtn.innerHTML;
+                themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
+                themeBtn.classList.add('subiendo');
+            }
+
+            try {
+                const url = `${DOWNLOAD_URL}?api_key=${API_KEY}&correo=${encodeURIComponent(correo)}`;
+                const response = await fetch(url);
+                if (response.status === 404) {
+                    throw new Error('No se encontró respaldo para este correo.');
+                }
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Error ${response.status}: ${text}`);
+                }
+                const jsonText = await response.text();
+                let parsed;
+                try { parsed = JSON.parse(jsonText); } catch { throw new Error('JSON inválido.'); }
+                if (!parsed || typeof parsed !== 'object') {
+                    throw new Error('Datos inválidos.');
+                }
+                rawData = parsed;
+                procesarDatos(rawData, correo);
+            } catch (error) {
+                console.error(error);
+                dataContainer.innerHTML = `
+                    <div class="empty-state" style="border-left:4px solid #f38ba8;">
+                        <i class="fas fa-exclamation-triangle" style="color:#f38ba8;"></i>
+                        <p style="color:#f38ba8; font-weight:600;">${error.message}</p>
+                        <p style="font-size:13px; color:#6c7086;">Verifica el correo o intenta más tarde.</p>
+                    </div>
+                `;
+                summaryArea.style.display = 'none';
+                searchBar.style.display = 'none';
+            } finally {
+                loadingState.style.display = 'none';
+                btnConsultar.disabled = false;
+                btnConsultar.innerHTML = '<i class="fas fa-search"></i> Consultar';
+                if (themeBtn && window._themeOriginal) {
+                    themeBtn.innerHTML = window._themeOriginal;
+                    themeBtn.classList.remove('subiendo');
+                    delete window._themeOriginal;
+                }
+            }
+        }
+
+        // ============================================================
+        // PROCESAR DATOS (AGRUPAR POR SECCIÓN)
+        // ============================================================
+        function procesarDatos(data, correo) {
+            const secciones = data.secciones || [];
+            if (secciones.length === 0) {
+                dataContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <p>No hay secciones en el respaldo.</p>
+                    </div>
+                `;
+                summaryArea.style.display = 'none';
+                searchBar.style.display = 'none';
+                return;
+            }
+
+            sectionsData = {};
+            for (const sec of secciones) {
+                const id = sec.id;
+                sectionsData[id] = {
+                    nombre: sec.nombre || 'Sin nombre',
+                    estudiantes: [],
+                    trabajos: { cotidiano: [], tarea: [], examen: [], proyecto: [], rubro: [] },
+                    calificaciones: [],
+                    asistencia: [],
+                    bitacora: [],
+                    plan: { enlaces: [], contenido: [] },
+                    porcentajes: null
+                };
+            }
+
+            // Estudiantes
+            const estudiantes = data.estudiantes || [];
+            for (const est of estudiantes) {
+                const secId = est.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].estudiantes.push(est);
+            }
+
+            // Trabajos
+            const tipos = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
+            const storeMap = {
+                cotidiano: 'trabajos_cotidiano',
+                tarea: 'trabajos_tarea',
+                examen: 'examenes',
+                proyecto: 'proyectos',
+                rubro: 'trabajos_rubro'
+            };
+            for (const tipo of tipos) {
+                const storeName = storeMap[tipo];
+                const items = data[storeName] || [];
+                for (const item of items) {
+                    const secId = item.seccionId;
+                    if (sectionsData[secId]) sectionsData[secId].trabajos[tipo].push(item);
+                }
+            }
+
+            // Calificaciones (relacionadas por estudiante)
+            const califs = data.calificaciones || [];
+            for (const calif of califs) {
+                const estId = calif.estudianteId;
+                const est = estudiantes.find(e => e.id === estId);
+                if (est) {
+                    const secId = est.seccionId;
+                    if (sectionsData[secId]) sectionsData[secId].calificaciones.push(calif);
+                }
+            }
+
+            // Asistencia
+            const asistencias = data.asistencia || [];
+            for (const asis of asistencias) {
+                const secId = asis.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].asistencia.push(asis);
+            }
+
+            // Bitácora
+            const bitacora = data.bitacora || [];
+            for (const bit of bitacora) {
+                const secId = bit.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].bitacora.push(bit);
+            }
+
+            // Plan
+            const enlaces = data.plan_enlaces || [];
+            for (const enl of enlaces) {
+                const secId = enl.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].plan.enlaces.push(enl);
+            }
+            const contenido = data.plan_contenido || [];
+            for (const cont of contenido) {
+                const secId = cont.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].plan.contenido.push(cont);
+            }
+
+            // Porcentajes
+            const porcentajes = data.porcentajes || [];
+            for (const pct of porcentajes) {
+                const secId = pct.seccionId;
+                if (sectionsData[secId]) sectionsData[secId].porcentajes = pct.porcentajes;
+            }
+
+            sectionIds = Object.keys(sectionsData);
+
+            const totalRegistros = Object.values(data).reduce((acc, arr) => {
+                if (Array.isArray(arr)) return acc + arr.length;
+                return acc;
+            }, 0);
+
+            totalSections.textContent = sectionIds.length;
+            totalRecords.textContent = totalRegistros;
+            emailDisplay.textContent = correo;
+            const meta = data._metadata || {};
+            exportDate.textContent = meta.exportDate ? new Date(meta.exportDate).toLocaleString() : '—';
+            summaryArea.style.display = 'flex';
+            searchBar.style.display = 'flex';
+
+            renderTarjetas();
+        }
+
+        // ============================================================
+        // RENDER TARJETAS
+        // ============================================================
+        function renderTarjetas() {
+            let html = '<div class="section-grid">';
+            for (const id of sectionIds) {
+                const sec = sectionsData[id];
+                const totalEstudiantes = sec.estudiantes.length;
+                const totalTrabajos = Object.values(sec.trabajos).reduce((a, b) => a + b.length, 0);
+                html += `
+                    <div class="section-card" data-section-id="${id}" onclick="toggleCard(this)">
+                        <div class="section-card-header">
+                            <div class="section-name">
+                                <i class="fas fa-folder"></i>
+                                ${escapeHtml(sec.nombre)}
+                            </div>
+                            <div class="section-badge">
+                                ${totalEstudiantes} estudiantes · ${totalTrabajos} trabajos
+                            </div>
+                        </div>
+                        <div class="section-card-body">
+                            ${renderSubTabla('Estudiantes', sec.estudiantes, ['id','nombre','apellidos','cedula','correo'])}
+                            ${renderSubTablaTrabajos(sec.trabajos)}
+                            ${renderSubTabla('Calificaciones', sec.calificaciones, ['estudianteId','trabajoId','tipoTrabajo','nota'])}
+                            ${renderSubTabla('Asistencia', sec.asistencia, ['fecha','estudianteId','estado','lecciones'])}
+                            ${renderSubTabla('Bitácora', sec.bitacora, ['id','titulo','contenido','fecha','timestamp'])}
+                            ${renderSubTabla('Plan - Enlaces', sec.plan.enlaces, ['id','nombre','url','tipo'])}
+                            ${renderSubTabla('Plan - Contenido', sec.plan.contenido, ['id','titulo','contenido','periodo','fecha'])}
+                            ${renderPorcentajes(sec.porcentajes)}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            dataContainer.innerHTML = html;
+            if (searchInput.value.trim()) filtrar();
+            else actualizarContador();
+        }
+
+        // ============================================================
+        // SUBTABLAS
+        // ============================================================
+        function renderSubTabla(titulo, items, columnas) {
+            if (!items || items.length === 0) return '';
+            let html = `
+                <div class="sub-table">
+                    <h4>${titulo} <span class="count">(${items.length})</span></h4>
+                    <table>
+                        <thead><tr><th>#</th>${columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+                        <tbody>
+            `;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                html += `<tr>`;
+                html += `<td>${i+1}</td>`;
+                for (const col of columnas) {
+                    let val = item[col];
+                    if (val === null || val === undefined) val = '';
+                    if (typeof val === 'object') val = JSON.stringify(val);
+                    const display = String(val).length > 40 ? String(val).substring(0, 40) + '…' : String(val);
+                    html += `<td>${escapeHtml(display)}</td>`;
+                }
+                html += `</tr>`;
+            }
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function renderSubTablaTrabajos(trabajos) {
+            const tipos = ['cotidiano', 'tarea', 'examen', 'proyecto', 'rubro'];
+            const labels = {
+                cotidiano: 'Trabajos Cotidianos',
+                tarea: 'Tareas',
+                examen: 'Exámenes',
+                proyecto: 'Proyectos',
+                rubro: 'Rubros'
+            };
+            let html = '';
+            for (const tipo of tipos) {
+                const items = trabajos[tipo] || [];
+                if (items.length === 0) continue;
+                const columnas = ['id', 'nombre', 'fecha', 'puntosMax', 'activo'];
+                if (tipo === 'rubro') columnas.push('porcentaje');
+                html += renderSubTabla(labels[tipo], items, columnas);
+            }
+            return html;
+        }
+
+        function renderPorcentajes(pct) {
+            if (!pct) return '';
+            let html = `
+                <div class="sub-table">
+                    <h4>Porcentajes</h4>
+                    <table>
+                        <thead><tr><th>Tipo</th><th>Porcentaje</th><th>Activo</th></tr></thead>
+                        <tbody>
+            `;
+            for (const [tipo, conf] of Object.entries(pct)) {
+                html += `<tr>
+                    <td>${escapeHtml(tipo)}</td>
+                    <td>${conf.porcentaje || 0}%</td>
+                    <td>${conf.activo ? '✅' : '❌'}</td>
+                </tr>`;
+            }
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        // ============================================================
+        // TOGGLE CARD
+        // ============================================================
+        function toggleCard(card) {
+            const body = card.querySelector('.section-card-body');
+            body.classList.toggle('open');
+        }
+
+        // ============================================================
+        // FILTRAR
+        // ============================================================
+        function filtrar() {
+            const term = searchInput.value.trim().toLowerCase();
+            const cards = document.querySelectorAll('.section-card');
+            let visible = 0;
+            for (const card of cards) {
+                const text = card.textContent.toLowerCase();
+                const match = term === '' || text.includes(term);
+                card.style.display = match ? '' : 'none';
+                if (match) visible++;
+            }
+            resultCount.textContent = `${visible} de ${cards.length} secciones`;
+        }
+
+        function actualizarContador() {
+            const cards = document.querySelectorAll('.section-card');
+            const visible = document.querySelectorAll('.section-card[style*="display: none"]');
+            const visibles = cards.length - visible.length;
+            resultCount.textContent = `${visibles} de ${cards.length} secciones`;
+        }
+
+        // ============================================================
+        // SUBIR ARCHIVO (con selector de archivo)
+        // ============================================================
+        async function subirArchivo() {
+            // Crear input file oculto
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.click();
+
+            const file = await new Promise((resolve) => {
+                input.onchange = (e) => {
+                    if (e.target.files.length > 0) resolve(e.target.files[0]);
+                    else resolve(null);
+                };
+                input.oncancel = () => resolve(null);
+            });
+
+            if (!file) return;
+
+            // Leer archivo
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const jsonText = e.target.result;
+                try {
+                    const parsed = JSON.parse(jsonText);
+                    // Verificar estructura mínima
+                    if (!parsed._metadata) {
+                        alert('El archivo no parece ser un respaldo válido (falta _metadata).');
+                        return;
+                    }
+                    // Confirmar subida
+                    const confirm = confirm(`¿Subir el archivo "${file.name}" (${(file.size / 1024).toFixed(1)} KB) al servidor?`);
+                    if (!confirm) return;
+
+                    // Obtener correo actual
+                    const correo = emailInput.value.trim();
+                    if (!correo || !correo.includes('@')) {
+                        alert('Ingresa un correo electrónico válido primero.');
+                        return;
+                    }
+
+                    // Mostrar feedback visual
+                    if (themeBtn) {
+                        window._themeOriginal = themeBtn.innerHTML;
+                        themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
+                        themeBtn.classList.add('subiendo');
+                    }
+
+                    // Enviar
+                    const form = new URLSearchParams();
+                    form.append('api_key', API_KEY);
+                    form.append('correo', correo);
+                    form.append('json', jsonText);
+                    form.append('version', '1.0');
+
+                    const response = await fetch(INSERT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: form
+                    });
+
+                    const texto = await response.text();
+                    let jsonResp;
+                    try { jsonResp = JSON.parse(texto); } catch { jsonResp = { raw: texto }; }
+
+                    if (!response.ok) {
+                        throw new Error(jsonResp.error || `Error ${response.status}: ${texto}`);
+                    }
+
+                    // Éxito
+                    alert(`✅ Respaldo subido correctamente.`);
+                    // Opcional: recargar la vista con el nuevo respaldo
+                    await consultar(new Event('submit'));
+                } catch (err) {
+                    console.error(err);
+                    alert(`❌ Error al subir: ${err.message}`);
+                } finally {
+                    if (themeBtn && window._themeOriginal) {
+                        themeBtn.innerHTML = window._themeOriginal;
+                        themeBtn.classList.remove('subiendo');
+                        delete window._themeOriginal;
+                    }
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================================
+        // LIMPIAR VISTA
+        // ============================================================
+        function limpiarVista() {
+            dataContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-cloud-download-alt"></i>
+                    <p>Ingresa un correo y haz clic en <strong>Consultar</strong></p>
+                    <p style="font-size:13px; color:#6c7086;">O sube un archivo JSON para actualizar el servidor</p>
+                </div>
+            `;
+            summaryArea.style.display = 'none';
+            searchBar.style.display = 'none';
+            rawData = null;
+            sectionsData = {};
+            sectionIds = [];
+        }
+
+        // ============================================================
+        // UTILIDADES
+        // ============================================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // TEMA
+        // ============================================================
+        document.getElementById('themeToggle')?.addEventListener('click', function() {
+            document.body.classList.toggle('light');
+        });
+
+        // ============================================================
+        // ENTER
+        // ============================================================
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') consultar(e);
+        });
+
+        console.log('✅ Gestor de respaldos listo.');
+    </script>
+</body>
+</html>

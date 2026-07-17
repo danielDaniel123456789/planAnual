@@ -328,10 +328,10 @@ async function registrarCorreoManual() {
     }
 }
 
-// ============================================================
-// 6. SUBIR DB AL SERVIDOR (VERSIÓN CON NOTIFICACIONES, FRECUENCIA Y CORREO GUARDADO)
-// ============================================================
 
+// ============================================================
+// 6. SUBIR DB AL SERVIDOR (VERSIÓN COMPLETA CON FEEDBACK VISUAL)
+// ============================================================
 async function subirDataBase() {
     console.log('📤 subirDataBase() iniciada');
     try {
@@ -391,15 +391,17 @@ async function subirDataBase() {
         const json = JSON.stringify(exportData, null, 2);
         Swal.close();
 
-        // 3. Feedback visual en el botón de tema
+        // 3. Feedback visual en el botón de tema (con colores rojos/neón y gradiente vertical)
         const themeBtn = document.getElementById('themeToggle');
         if (themeBtn) {
             window._themeBtnOriginal = themeBtn.innerHTML;
-            themeBtn.innerHTML = '<i class="fas fa-spinner"></i> Subiendo...';
+            // Cambiar contenido a spinner
+            themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
+            // Agregar clase con estilos (los CSS ya tienen los colores rojos y animación vertical)
             themeBtn.classList.add('subiendo');
         }
 
-        // 4. Enviar al servidor
+        // 4. Enviar al servidor (POST)
         const form = new URLSearchParams();
         form.append('api_key', API_KEY);
         form.append('correo', correo);
@@ -412,9 +414,9 @@ async function subirDataBase() {
             body: form
         });
 
-        // 5. Restaurar botón
+        // 5. Restaurar botón (siempre, tanto éxito como error)
         if (themeBtn && window._themeBtnOriginal) {
-            themeBtn.innerHTML = window._themeBtnOriginal;
+            themeBtn.innerHTML = window._themeBtnOriginal; // Restaurar ícono original
             themeBtn.classList.remove('subiendo');
             delete window._themeBtnOriginal;
         }
@@ -428,7 +430,7 @@ async function subirDataBase() {
             throw new Error(jsonResp.error || `Error ${response.status}: ${texto}`);
         }
 
-        // Éxito
+        // 7. Éxito
         Swal.fire({
             icon: 'success',
             title: '✅ Respaldo subido exitosamente',
@@ -444,6 +446,7 @@ async function subirDataBase() {
             color: 'var(--text-primary)'
         });
 
+        // Limpiar bandera de cambios pendientes
         localStorage.removeItem('sync_pending');
         if (window.actualizarBadge) window.actualizarBadge();
         localStorage.setItem('sync_last_upload', new Date().toISOString());
@@ -466,7 +469,6 @@ async function subirDataBase() {
         });
     }
 }
-
 
 async function cambiarFrecuenciaRespaldo() {
     const currentInterval = parseInt(localStorage.getItem('sync_interval') || '0');

@@ -331,12 +331,11 @@ async function registrarCorreoManual() {
 // ============================================================
 // 6. SUBIR DB AL SERVIDOR (VERSIÓN CON NOTIFICACIONES, FRECUENCIA Y CORREO GUARDADO)
 // ============================================================
+
 async function subirDataBase() {
     console.log('📤 subirDataBase() iniciada');
     try {
-        Swal.close();
-
-        // 1. Correo (guardado o pedir)
+        // 1. Obtener correo
         let correo = localStorage.getItem('sync_email');
         let correoConfirmado = false;
 
@@ -369,17 +368,102 @@ async function subirDataBase() {
         }
         if (!correoConfirmado) return;
 
-        // 2. Mostrar carga
+        // 2. Obtener datos de IndexedDB
         Swal.fire({
-            title: 'Subiendo respaldo...',
+            title: 'Preparando datos...',
             text: 'Por favor espera.',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
 
-        // ... resto del código (obtener datos, enviar, manejar errores, éxito) ...
+        const storeNames = db.db.objectStoreNames;
+        const exportData = {};
+        for (const storeName of storeNames) {
+            exportData[storeName] = await db.getAll(storeName);
+        }
+        exportData._metadata = {
+            exportDate: new Date().toISOString(),
+            dbName: DB_NAME,
+            dbVersion: DB_VERSION,
+            totalStores: storeNames.length,
+            totalRecords: Object.values(exportData).reduce((sum, arr) => sum + arr.length, 0)
+        };
+        const json = JSON.stringify(exportData, null, 2);
+        Swal.close();
+
+        // 3. Feedback visual en el botón de tema
+        const themeBtn = document.getElementById('themeToggle');
+        if (themeBtn) {
+            window._themeBtnOriginal = themeBtn.innerHTML;
+            themeBtn.innerHTML = '<i class="fas fa-spinner"></i> Subiendo...';
+            themeBtn.classList.add('subiendo');
+        }
+
+        // 4. Enviar al servidor
+        const form = new URLSearchParams();
+        form.append('api_key', API_KEY);
+        form.append('correo', correo);
+        form.append('json', json);
+        form.append('version', '1.0');
+
+        const response = await fetch(SERVER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: form
+        });
+
+        // 5. Restaurar botón
+        if (themeBtn && window._themeBtnOriginal) {
+            themeBtn.innerHTML = window._themeBtnOriginal;
+            themeBtn.classList.remove('subiendo');
+            delete window._themeBtnOriginal;
+        }
+
+        // 6. Procesar respuesta
+        const texto = await response.text();
+        let jsonResp;
+        try { jsonResp = JSON.parse(texto); } catch { jsonResp = { raw: texto }; }
+
+        if (!response.ok) {
+            throw new Error(jsonResp.error || `Error ${response.status}: ${texto}`);
+        }
+
+        // Éxito
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Respaldo subido exitosamente',
+            html: `
+                <p>Correo: <strong>${correo}</strong></p>
+                <p>Registros: ${exportData._metadata.totalRecords}</p>
+                <p>Tamaño: ${(new Blob([json]).size / 1024).toFixed(1)} KB</p>
+                <p style="font-size:12px; color:var(--text-muted);">${jsonResp.message || ''}</p>
+            `,
+            timer: 4000,
+            timerProgressBar: true,
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)'
+        });
+
+        localStorage.removeItem('sync_pending');
+        if (window.actualizarBadge) window.actualizarBadge();
+        localStorage.setItem('sync_last_upload', new Date().toISOString());
+
     } catch (error) {
-        // ...
+        console.error('❌ Error en subirDataBase:', error);
+        // Restaurar botón en caso de error
+        const themeBtn = document.getElementById('themeToggle');
+        if (themeBtn && window._themeBtnOriginal) {
+            themeBtn.innerHTML = window._themeBtnOriginal;
+            themeBtn.classList.remove('subiendo');
+            delete window._themeBtnOriginal;
+        }
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Error al subir',
+            text: error.message || 'No se pudo subir el respaldo. Revisa la consola.',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)'
+        });
     }
 }
 

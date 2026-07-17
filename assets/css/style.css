@@ -680,3 +680,42 @@ body {
 .swal2-button-option i {
     width: 24px;
 }
+
+/* ===== BOTÓN TEMA EN ESTADO DE SUBIDA ===== */
+#themeToggle.subiendo {
+    background: linear-gradient(135deg, #f9e2af, #f38ba8, #89b4fa) !important;
+    background-size: 300% 300% !important;
+    animation: gradient-subida 2s ease infinite, pulse-subida 1.2s ease-in-out infinite;
+    border-radius: 30px !important;
+    padding: 6px 16px !important;
+    border: 2px solid #fff !important;
+    box-shadow: 0 0 30px rgba(249, 226, 175, 0.7), 0 0 60px rgba(243, 139, 168, 0.4) !important;
+    color: #1e1e2f !important;
+    font-weight: 600 !important;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+@keyframes gradient-subida {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-subida {
+    0% { box-shadow: 0 0 20px rgba(249, 226, 175, 0.4), 0 0 40px rgba(243, 139, 168, 0.2); }
+    50% { box-shadow: 0 0 40px rgba(249, 226, 175, 0.8), 0 0 80px rgba(243, 139, 168, 0.4); }
+    100% { box-shadow: 0 0 20px rgba(249, 226, 175, 0.4), 0 0 40px rgba(243, 139, 168, 0.2); }
+}
+
+/* Spinner animado (reemplaza el ícono de paleta) */
+#themeToggle.subiendo i {
+    animation: spin 1s linear infinite;
+    font-size: 1.2rem;
+    margin-right: 6px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

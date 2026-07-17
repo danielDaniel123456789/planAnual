@@ -6,6 +6,9 @@
     <title>Consultar respaldo - VS Code style</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         /* ===== RESET Y ESTRUCTURA VS CODE ===== */
@@ -23,7 +26,6 @@
             display: flex;
             flex-direction: column;
         }
-        /* Barra de título superior */
         .title-bar {
             background: #252535;
             padding: 6px 16px;
@@ -41,12 +43,8 @@
             gap: 8px;
             color: #f9e2af;
         }
-        .title-bar h1 i {
-            color: #89b4fa;
-        }
-        .title-bar .spacer {
-            flex: 1;
-        }
+        .title-bar h1 i { color: #89b4fa; }
+        .title-bar .spacer { flex: 1; }
         .title-bar .email-form {
             display: flex;
             gap: 6px;
@@ -64,9 +62,7 @@
             min-width: 180px;
             outline: none;
         }
-        .title-bar .email-form input::placeholder {
-            color: #6c7086;
-        }
+        .title-bar .email-form input::placeholder { color: #6c7086; }
         .title-bar .email-form button {
             background: #89b4fa;
             border: none;
@@ -81,13 +77,8 @@
             gap: 4px;
             transition: background 0.2s;
         }
-        .title-bar .email-form button:hover {
-            background: #b4cffa;
-        }
-        .title-bar .email-form button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .title-bar .email-form button:hover { background: #b4cffa; }
+        .title-bar .email-form button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-tema {
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid rgba(137, 180, 250, 0.3);
@@ -107,7 +98,6 @@
             border-color: #89b4fa;
             box-shadow: 0 0 20px rgba(137, 180, 250, 0.3);
         }
-        /* Estado subiendo (gradiente vertical rojo) */
         .btn-tema.subiendo {
             border-radius: 30px !important;
             width: auto !important;
@@ -123,9 +113,7 @@
             font-size: 0.8rem;
             gap: 6px;
         }
-        .btn-tema.subiendo i {
-            animation: spin 1.2s linear infinite !important;
-        }
+        .btn-tema.subiendo i { animation: spin 1.2s linear infinite !important; }
         .btn-tema.subiendo::after {
             content: "Subiendo";
             font-size: 0.7rem;
@@ -148,14 +136,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ===== CUERPO PRINCIPAL (VS CODE LAYOUT) ===== */
+        /* ===== CUERPO PRINCIPAL ===== */
         .main-body {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* SIDEBAR IZQUIERDA (Explorador) */
+        /* SIDEBAR */
         .sidebar-explorer {
             width: 260px;
             background: #252535;
@@ -211,33 +199,13 @@
             text-align: center;
             color: #f9e2af;
         }
-        .sidebar-explorer .tree .tree-item .chevron {
-            margin-left: auto;
-            color: #6c7086;
-            transition: transform 0.2s;
-            font-size: 12px;
-        }
-        .sidebar-explorer .tree .tree-item .chevron.open {
-            transform: rotate(90deg);
-        }
         .sidebar-explorer .tree .tree-item .count {
             font-size: 11px;
             color: #6c7086;
             margin-left: 4px;
         }
-        .sidebar-explorer .tree .tree-children {
-            padding-left: 24px;
-            display: none;
-        }
-        .sidebar-explorer .tree .tree-children.open {
-            display: block;
-        }
-        .sidebar-explorer .tree .tree-children .tree-item {
-            font-size: 12px;
-            padding: 3px 12px;
-        }
 
-        /* PANEL PRINCIPAL (contenido y pestañas) */
+        /* PANEL PRINCIPAL */
         .panel-principal {
             flex: 1;
             display: flex;
@@ -245,7 +213,6 @@
             overflow: hidden;
             background: #1e1e2f;
         }
-        /* Pestañas */
         .tabs-bar {
             display: flex;
             background: #252535;
@@ -267,9 +234,7 @@
             gap: 6px;
             transition: all 0.15s;
         }
-        .tabs-bar .tab:hover {
-            color: #cdd6f4;
-        }
+        .tabs-bar .tab:hover { color: #cdd6f4; }
         .tabs-bar .tab.active {
             color: #cdd6f4;
             border-bottom-color: #89b4fa;
@@ -281,11 +246,72 @@
             font-size: 10px;
             cursor: pointer;
         }
-        .tabs-bar .tab .close-tab:hover {
+        .tabs-bar .tab .close-tab:hover { color: #f38ba8; }
+
+        /* Buscador */
+        .search-box {
+            padding: 6px 16px;
+            background: #252535;
+            border-bottom: 1px solid #3a3a4a;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .search-box input {
+            flex: 1;
+            min-width: 150px;
+            background: #3a3a4a;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: #cdd6f4;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-box input::placeholder { color: #6c7086; }
+        .search-box .result-count {
+            font-size: 12px;
+            color: #a6adc8;
+            white-space: nowrap;
+        }
+        .search-box .btn-limpiar {
+            background: transparent;
+            border: none;
             color: #f38ba8;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 6px;
+            display: none;
+        }
+        .search-box .btn-limpiar.visible { display: inline; }
+        .search-box .btn-limpiar:hover { color: #f5a3bb; }
+
+        /* Botón PDF */
+        .btn-pdf {
+            background: #3a3a4a;
+            border: none;
+            color: #cdd6f4;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+        .btn-pdf:hover {
+            background: #4a4a5a;
+            color: #f9e2af;
+        }
+        .btn-pdf:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        /* Contenido de pestañas (scroll) */
+        /* Contenido de pestañas */
         .tab-content {
             flex: 1;
             overflow-y: auto;
@@ -298,7 +324,7 @@
             display: block;
         }
 
-        /* ===== TABLAS ===== */
+        /* Tablas */
         .table-container {
             margin-bottom: 20px;
         }
@@ -333,9 +359,7 @@
             user-select: none;
             white-space: nowrap;
         }
-        .table-container th:hover {
-            background: #4a4a5a;
-        }
+        .table-container th:hover { background: #4a4a5a; }
         .table-container th .sort-icon {
             margin-left: 4px;
             font-size: 10px;
@@ -356,53 +380,38 @@
             text-align: center;
             padding: 16px;
         }
-
-        /* ===== BUSCADOR ===== */
-        .search-box {
-            padding: 6px 16px;
-            background: #252535;
-            border-bottom: 1px solid #3a3a4a;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .search-box input {
-            flex: 1;
-            background: #3a3a4a;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 12px;
-            color: #cdd6f4;
-            font-size: 13px;
-            outline: none;
-        }
-        .search-box input::placeholder {
-            color: #6c7086;
-        }
-        .search-box .result-count {
-            font-size: 12px;
-            color: #a6adc8;
-            white-space: nowrap;
-        }
-
-        /* ===== SCROLLBAR ===== */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e1e2f;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #45475a;
+        /* Tarjeta de resumen del estudiante */
+        .student-summary {
+            background: #2a2a3a;
+            border-left: 4px solid #f9e2af;
+            padding: 12px 16px;
             border-radius: 4px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            align-items: center;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #585b70;
+        .student-summary .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f9e2af;
+        }
+        .student-summary .detail {
+            font-size: 13px;
+            color: #a6adc8;
+        }
+        .student-summary .detail i {
+            margin-right: 4px;
+            color: #89b4fa;
         }
 
-        /* ===== ESTADO VACÍO ===== */
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e2f; }
+        ::-webkit-scrollbar-thumb { background: #45475a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #585b70; }
+
         .empty-state {
             display: flex;
             flex-direction: column;
@@ -416,36 +425,23 @@
             margin-bottom: 16px;
             opacity: 0.3;
         }
-        .empty-state p {
-            font-size: 14px;
-        }
+        .empty-state p { font-size: 14px; }
 
-        /* ===== RESPONSIVE ===== */
+        /* Responsive */
         @media (max-width: 700px) {
-            .sidebar-explorer {
-                width: 200px;
-            }
-            .title-bar .email-form input {
-                min-width: 100px;
-            }
+            .sidebar-explorer { width: 200px; }
+            .title-bar .email-form input { min-width: 100px; }
         }
         @media (max-width: 550px) {
-            .main-body {
-                flex-direction: column;
-            }
+            .main-body { flex-direction: column; }
             .sidebar-explorer {
                 width: 100%;
                 max-height: 200px;
                 border-right: none;
                 border-bottom: 1px solid #3a3a4a;
             }
-            .title-bar {
-                flex-wrap: wrap;
-            }
-            .title-bar .email-form {
-                flex: 1;
-                min-width: 200px;
-            }
+            .title-bar { flex-wrap: wrap; }
+            .title-bar .email-form { flex: 1; min-width: 200px; }
         }
     </style>
 </head>
@@ -495,8 +491,14 @@
             <!-- Buscador -->
             <div class="search-box" id="searchBox" style="display:none;">
                 <i class="fas fa-search" style="color:#6c7086;"></i>
-                <input type="text" id="globalSearch" placeholder="Buscar en todas las tablas..." oninput="aplicarBusquedaGlobal()" />
+                <input type="text" id="globalSearch" placeholder="Buscar estudiante (nombre, cédula, correo)..." oninput="aplicarBusquedaGlobal()" />
                 <span class="result-count" id="globalCount">0 coincidencias</span>
+                <button class="btn-limpiar" id="btnLimpiarFiltro" onclick="limpiarFiltro()" title="Limpiar filtro">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+                <button class="btn-pdf" id="btnPdfEstudiante" onclick="descargarPDFEstudiante()" title="Descargar PDF del estudiante filtrado" disabled>
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
             </div>
 
             <!-- Contenido de pestañas -->
@@ -533,12 +535,16 @@
         const globalSearch = document.getElementById('globalSearch');
         const globalCount = document.getElementById('globalCount');
         const sectionCount = document.getElementById('sectionCount');
+        const btnLimpiar = document.getElementById('btnLimpiarFiltro');
+        const btnPdf = document.getElementById('btnPdfEstudiante');
 
         let rawData = null;
         let sections = {};
         let sectionIds = [];
         let activeTab = 'welcome';
-        let sortState = {}; // { tableId: { column: 'nombre', asc: true } }
+        let sortState = {};
+        let filtroActivo = false;
+        let currentStudentIds = []; // IDs de los estudiantes filtrados actualmente
 
         // ============================================================
         // CONSULTAR
@@ -554,7 +560,6 @@
             btnConsultar.disabled = true;
             btnConsultar.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
 
-            // Efecto visual en botón de tema
             if (themeBtn) {
                 window._themeOriginal = themeBtn.innerHTML;
                 themeBtn.innerHTML = '<i class="fas fa-spinner"></i>';
@@ -589,7 +594,7 @@
         }
 
         // ============================================================
-        // PROCESAR DATOS (igual que antes)
+        // PROCESAR DATOS (agrupar por sección)
         // ============================================================
         function procesarDatos(data, correo) {
             const secciones = data.secciones || [];
@@ -613,14 +618,12 @@
                 };
             }
 
-            // Poblar estudiantes
             const estudiantes = data.estudiantes || [];
             for (const est of estudiantes) {
                 const sid = est.seccionId;
                 if (sections[sid]) sections[sid].estudiantes.push(est);
             }
 
-            // Trabajos
             const storeMap = {
                 cotidiano: 'trabajos_cotidiano',
                 tarea: 'trabajos_tarea',
@@ -636,7 +639,6 @@
                 }
             }
 
-            // Calificaciones
             const califs = data.calificaciones || [];
             for (const c of califs) {
                 const est = estudiantes.find(e => e.id === c.estudianteId);
@@ -645,19 +647,16 @@
                 }
             }
 
-            // Asistencia
             const asis = data.asistencia || [];
             for (const a of asis) {
                 if (sections[a.seccionId]) sections[a.seccionId].asistencia.push(a);
             }
 
-            // Bitácora
             const bits = data.bitacora || [];
             for (const b of bits) {
                 if (sections[b.seccionId]) sections[b.seccionId].bitacora.push(b);
             }
 
-            // Plan
             const enlaces = data.plan_enlaces || [];
             for (const e of enlaces) {
                 if (sections[e.seccionId]) sections[e.seccionId].plan.enlaces.push(e);
@@ -667,7 +666,6 @@
                 if (sections[c.seccionId]) sections[c.seccionId].plan.contenido.push(c);
             }
 
-            // Porcentajes
             const pcts = data.porcentajes || [];
             for (const p of pcts) {
                 if (sections[p.seccionId]) sections[p.seccionId].porcentajes = p.porcentajes;
@@ -677,15 +675,15 @@
             sectionCount.textContent = sectionIds.length;
 
             renderTree();
-            // Abrir primera sección automáticamente
             if (sectionIds.length > 0) {
                 abrirSeccion(sectionIds[0]);
             }
             searchBox.style.display = 'flex';
+            limpiarFiltro();
         }
 
         // ============================================================
-        // RENDER ÁRBOL (SIDEBAR)
+        // RENDER ÁRBOL
         // ============================================================
         function renderTree() {
             let html = '';
@@ -699,7 +697,6 @@
                         <span class="icon"><i class="fas fa-folder"></i></span>
                         ${escapeHtml(sec.nombre)}
                         <span class="count">(${total})</span>
-                        <span class="chevron"><i class="fas fa-chevron-right"></i></span>
                     </div>
                 `;
             }
@@ -710,7 +707,6 @@
         // ABRIR SECCIÓN (crea pestaña)
         // ============================================================
         function abrirSeccion(sectionId) {
-            // Si ya existe una pestaña con esa sección, activarla
             const existingTab = document.querySelector(`.tab[data-section="${sectionId}"]`);
             if (existingTab) {
                 activarPestana(existingTab.dataset.tabId);
@@ -720,10 +716,8 @@
             const sec = sections[sectionId];
             if (!sec) return;
 
-            // Crear ID único para la pestaña
             const tabId = 'sec_' + sectionId;
 
-            // Crear pestaña
             const tab = document.createElement('div');
             tab.className = 'tab';
             tab.dataset.section = sectionId;
@@ -735,32 +729,61 @@
             tab.onclick = () => activarPestana(tabId);
             tabsBar.appendChild(tab);
 
-            // Crear contenido
             const view = document.createElement('div');
             view.className = 'data-view';
             view.id = 'view-' + tabId;
-            view.innerHTML = generarContenidoSeccion(sectionId);
+            view.innerHTML = generarContenidoSeccion(sectionId, null);
             tabContent.appendChild(view);
 
-            // Activar
             activarPestana(tabId);
-            // Aplicar búsqueda global si hay texto
             if (globalSearch.value.trim()) {
                 aplicarBusquedaGlobal();
             }
         }
 
         // ============================================================
-        // GENERAR CONTENIDO DE SECCIÓN (tablas ordenables)
+        // GENERAR CONTENIDO DE SECCIÓN (con o sin filtro de estudiantes)
         // ============================================================
-        function generarContenidoSeccion(sectionId) {
+        function generarContenidoSeccion(sectionId, studentIds) {
             const sec = sections[sectionId];
+            if (!sec) return '';
+
+            const filtro = studentIds && studentIds.length > 0 ? studentIds : null;
+            currentStudentIds = filtro || [];
+
+            let estudiantes = sec.estudiantes;
+            let calificaciones = sec.calificaciones;
+            let asistencia = sec.asistencia;
+            let bitacora = sec.bitacora;
+
+            if (filtro) {
+                estudiantes = estudiantes.filter(e => filtro.includes(e.id));
+                calificaciones = calificaciones.filter(c => filtro.includes(c.estudianteId));
+                asistencia = asistencia.filter(a => filtro.includes(a.estudianteId));
+                bitacora = bitacora.filter(b => b.estudianteId !== undefined && filtro.includes(b.estudianteId));
+            }
+
             let html = '';
 
-            // Tabla: Estudiantes
-            html += generarTabla('Estudiantes', sec.estudiantes, ['id','nombre','apellidos','cedula','correo'], 'estudiantes_' + sectionId);
+            // Resumen del estudiante (si hay filtro)
+            if (filtro && estudiantes.length > 0) {
+                const est = estudiantes[0];
+                html += `
+                    <div class="student-summary">
+                        <span class="name"><i class="fas fa-user-graduate"></i> ${escapeHtml(est.nombre || '')} ${escapeHtml(est.apellidos || '')}</span>
+                        <span class="detail"><i class="fas fa-id-card"></i> ${escapeHtml(est.cedula || 'Sin cédula')}</span>
+                        <span class="detail"><i class="fas fa-envelope"></i> ${escapeHtml(est.correo || 'Sin correo')}</span>
+                        <span style="margin-left:auto; font-size:12px; color:#6c7086;">
+                            ${filtro.length} estudiante${filtro.length>1?'s':''} encontrado${filtro.length>1?'s':''}
+                        </span>
+                    </div>
+                `;
+            }
 
-            // Trabajos por tipo
+            // Tabla Estudiantes (sin columna id)
+            html += generarTabla('Estudiantes', estudiantes, ['nombre','apellidos','cedula','correo'], 'estudiantes_' + sectionId + (filtro ? '_filt' : ''));
+
+            // Trabajos (sin columna id)
             const tipos = [
                 { key: 'cotidiano', label: 'Trabajos Cotidianos' },
                 { key: 'tarea', label: 'Tareas' },
@@ -770,54 +793,60 @@
             ];
             for (const t of tipos) {
                 const items = sec.trabajos[t.key] || [];
-                const cols = ['id','nombre','fecha','puntosMax','activo'];
+                const cols = ['nombre','fecha','puntosMax','activo'];
                 if (t.key === 'rubro') cols.push('porcentaje');
-                html += generarTabla(t.label, items, cols, t.key + '_' + sectionId);
+                html += generarTabla(t.label, items, cols, t.key + '_' + sectionId + (filtro ? '_filt' : ''));
             }
 
-            // Calificaciones
-            html += generarTabla('Calificaciones', sec.calificaciones, ['estudianteId','trabajoId','tipoTrabajo','nota'], 'califs_' + sectionId);
+            // Calificaciones (sin columna id)
+            html += generarTabla('Calificaciones', calificaciones, ['estudianteId','trabajoId','tipoTrabajo','nota'], 'califs_' + sectionId + (filtro ? '_filt' : ''));
 
-            // Asistencia
-            html += generarTabla('Asistencia', sec.asistencia, ['fecha','estudianteId','estado','lecciones'], 'asis_' + sectionId);
+            // Asistencia (sin columna id)
+            html += generarTabla('Asistencia', asistencia, ['fecha','estudianteId','estado','lecciones'], 'asis_' + sectionId + (filtro ? '_filt' : ''));
 
-            // Bitácora
-            html += generarTabla('Bitácora', sec.bitacora, ['id','titulo','contenido','fecha','timestamp'], 'bit_' + sectionId);
+            // Bitácora (sin columna id)
+            html += generarTabla('Bitácora', bitacora, ['titulo','contenido','fecha','timestamp'], 'bit_' + sectionId + (filtro ? '_filt' : ''));
 
-            // Plan enlaces
-            html += generarTabla('Plan - Enlaces', sec.plan.enlaces, ['id','nombre','url','tipo'], 'plan_enl_' + sectionId);
-
-            // Plan contenido
-            html += generarTabla('Plan - Contenido', sec.plan.contenido, ['id','titulo','contenido','periodo','fecha'], 'plan_cont_' + sectionId);
+            // Plan (sin columna id)
+            html += generarTabla('Plan - Enlaces', sec.plan.enlaces, ['nombre','url','tipo'], 'plan_enl_' + sectionId + (filtro ? '_filt' : ''));
+            html += generarTabla('Plan - Contenido', sec.plan.contenido, ['titulo','contenido','periodo','fecha'], 'plan_cont_' + sectionId + (filtro ? '_filt' : ''));
 
             // Porcentajes
             if (sec.porcentajes) {
                 html += generarPorcentajes(sec.porcentajes);
             }
 
+            // Habilitar/deshabilitar botón PDF según filtro
+            btnPdf.disabled = !filtro || estudiantes.length === 0;
             return html;
         }
 
         // ============================================================
-        // GENERAR TABLA CON ORDENAMIENTO
+        // GENERAR TABLA (ocultando columna 'id')
         // ============================================================
         function generarTabla(titulo, items, columnas, tableId) {
-            if (!items || items.length === 0) return '';
-
-            // Inicializar estado de orden para esta tabla si no existe
-            if (!sortState[tableId]) {
-                sortState[tableId] = { column: columnas[0] || 'id', asc: true };
+            if (!items || items.length === 0) {
+                return `<div class="table-container" data-table="${tableId}">
+                    <h3>${titulo} <span class="count">(0)</span></h3>
+                    <table><tbody><tr><td class="empty-row">Sin datos</td></tr></tbody></table>
+                </div>`;
             }
 
-            // Ordenar items según estado
-            const sorted = ordenarItems(items, columnas, sortState[tableId]);
+            // Filtrar columnas para excluir 'id'
+            const colFiltradas = columnas.filter(c => c !== 'id');
+
+            if (!sortState[tableId]) {
+                sortState[tableId] = { column: colFiltradas[0] || 'nombre', asc: true };
+            }
+
+            const sorted = ordenarItems(items, colFiltradas, sortState[tableId]);
 
             let html = `<div class="table-container" data-table="${tableId}">
                 <h3>${titulo} <span class="count">(${items.length})</span></h3>
                 <table>
                     <thead><tr>
                         <th>#</th>`;
-            for (const col of columnas) {
+            for (const col of colFiltradas) {
                 const isSorted = sortState[tableId].column === col;
                 const icon = isSorted ? (sortState[tableId].asc ? '↑' : '↓') : '↕';
                 html += `<th onclick="ordenarTabla('${tableId}','${col}')">
@@ -830,7 +859,7 @@
                 const item = sorted[i];
                 html += `<tr>`;
                 html += `<td>${i+1}</td>`;
-                for (const col of columnas) {
+                for (const col of colFiltradas) {
                     let val = item[col];
                     if (val === null || val === undefined) val = '';
                     if (typeof val === 'object') val = JSON.stringify(val);
@@ -864,7 +893,7 @@
         }
 
         // ============================================================
-        // ORDENAR TABLA (click en cabecera)
+        // ORDENAR TABLA
         // ============================================================
         function ordenarTabla(tableId, column) {
             const state = sortState[tableId];
@@ -874,36 +903,52 @@
                 state.column = column;
                 state.asc = true;
             }
-            // Reconstruir solo la tabla afectada
+            // Reconstruir solo esa tabla
             const container = document.querySelector(`.table-container[data-table="${tableId}"]`);
             if (!container) return;
-            // Buscar el sectionId a partir del id de la tabla
-            const sectionId = tableId.split('_').pop();
+            const parts = tableId.split('_');
+            const sectionId = parts[parts.length - 2] === 'filt' ? parts[parts.length - 3] : parts[parts.length - 1];
+            const prefix = parts[0];
             const sec = sections[sectionId];
             if (!sec) return;
 
-            // Determinar qué tipo de datos es
             let items = [];
             let titulo = '';
             let columnas = [];
-            const prefix = tableId.split('_')[0];
-            if (prefix === 'estudiantes') { items = sec.estudiantes; titulo = 'Estudiantes'; columnas = ['id','nombre','apellidos','cedula','correo']; }
-            else if (prefix === 'cotidiano') { items = sec.trabajos.cotidiano; titulo = 'Trabajos Cotidianos'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
-            else if (prefix === 'tarea') { items = sec.trabajos.tarea; titulo = 'Tareas'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
-            else if (prefix === 'examen') { items = sec.trabajos.examen; titulo = 'Exámenes'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
-            else if (prefix === 'proyecto') { items = sec.trabajos.proyecto; titulo = 'Proyectos'; columnas = ['id','nombre','fecha','puntosMax','activo']; }
-            else if (prefix === 'rubro') { items = sec.trabajos.rubro; titulo = 'Rubros'; columnas = ['id','nombre','fecha','puntosMax','activo','porcentaje']; }
+
+            if (prefix === 'estudiantes') { items = sec.estudiantes; titulo = 'Estudiantes'; columnas = ['nombre','apellidos','cedula','correo']; }
+            else if (prefix === 'cotidiano') { items = sec.trabajos.cotidiano; titulo = 'Trabajos Cotidianos'; columnas = ['nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'tarea') { items = sec.trabajos.tarea; titulo = 'Tareas'; columnas = ['nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'examen') { items = sec.trabajos.examen; titulo = 'Exámenes'; columnas = ['nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'proyecto') { items = sec.trabajos.proyecto; titulo = 'Proyectos'; columnas = ['nombre','fecha','puntosMax','activo']; }
+            else if (prefix === 'rubro') { items = sec.trabajos.rubro; titulo = 'Rubros'; columnas = ['nombre','fecha','puntosMax','activo','porcentaje']; }
             else if (prefix === 'califs') { items = sec.calificaciones; titulo = 'Calificaciones'; columnas = ['estudianteId','trabajoId','tipoTrabajo','nota']; }
             else if (prefix === 'asis') { items = sec.asistencia; titulo = 'Asistencia'; columnas = ['fecha','estudianteId','estado','lecciones']; }
-            else if (prefix === 'bit') { items = sec.bitacora; titulo = 'Bitácora'; columnas = ['id','titulo','contenido','fecha','timestamp']; }
-            else if (prefix === 'plan_enl') { items = sec.plan.enlaces; titulo = 'Plan - Enlaces'; columnas = ['id','nombre','url','tipo']; }
-            else if (prefix === 'plan_cont') { items = sec.plan.contenido; titulo = 'Plan - Contenido'; columnas = ['id','titulo','contenido','periodo','fecha']; }
+            else if (prefix === 'bit') { items = sec.bitacora; titulo = 'Bitácora'; columnas = ['titulo','contenido','fecha','timestamp']; }
+            else if (prefix === 'plan_enl') { items = sec.plan.enlaces; titulo = 'Plan - Enlaces'; columnas = ['nombre','url','tipo']; }
+            else if (prefix === 'plan_cont') { items = sec.plan.contenido; titulo = 'Plan - Contenido'; columnas = ['titulo','contenido','periodo','fecha']; }
             else return;
 
-            // Reconstruir solo esta tabla
+            // Si hay filtro activo, filtrar items
+            if (filtroActivo) {
+                const term = globalSearch.value.trim().toLowerCase();
+                const estudiantesFiltrados = sec.estudiantes.filter(e => {
+                    const nombre = (e.nombre || '') + ' ' + (e.apellidos || '');
+                    const cedula = e.cedula || '';
+                    const correo = e.correo || '';
+                    const search = (nombre + ' ' + cedula + ' ' + correo).toLowerCase();
+                    return search.includes(term);
+                });
+                const ids = estudiantesFiltrados.map(e => e.id);
+                if (ids.length > 0) {
+                    if (prefix === 'estudiantes') items = items.filter(e => ids.includes(e.id));
+                    else if (prefix === 'califs' || prefix === 'asis') items = items.filter(i => ids.includes(i.estudianteId));
+                    else if (prefix === 'bit') items = items.filter(i => ids.includes(i.estudianteId));
+                }
+            }
+
             const newHtml = generarTabla(titulo, items, columnas, tableId);
             container.outerHTML = newHtml;
-            // Reaplicar búsqueda si hay texto
             if (globalSearch.value.trim()) {
                 aplicarBusquedaGlobal();
             }
@@ -928,19 +973,231 @@
         }
 
         // ============================================================
+        // BÚSQUEDA GLOBAL (filtra por estudiante)
+        // ============================================================
+        function aplicarBusquedaGlobal() {
+            const term = globalSearch.value.trim().toLowerCase();
+            const view = document.querySelector('.data-view.active');
+            if (!view) return;
+
+            const tab = document.querySelector('.tab.active');
+            if (!tab || !tab.dataset.section) {
+                if (tab && tab.dataset.tab === 'welcome') {
+                    globalCount.textContent = '0 coincidencias';
+                    btnLimpiar.classList.remove('visible');
+                    btnPdf.disabled = true;
+                    return;
+                }
+                return;
+            }
+            const sectionId = tab.dataset.section;
+            const sec = sections[sectionId];
+            if (!sec) return;
+
+            if (term === '') {
+                limpiarFiltro();
+                return;
+            }
+
+            const estudiantesFiltrados = sec.estudiantes.filter(e => {
+                const nombre = (e.nombre || '') + ' ' + (e.apellidos || '');
+                const cedula = e.cedula || '';
+                const correo = e.correo || '';
+                const search = (nombre + ' ' + cedula + ' ' + correo).toLowerCase();
+                return search.includes(term);
+            });
+
+            if (estudiantesFiltrados.length === 0) {
+                view.innerHTML = `
+                    <div class="empty-state" style="border-left:4px solid #f38ba8; padding:20px;">
+                        <i class="fas fa-user-slash" style="color:#f38ba8;"></i>
+                        <p>No se encontró ningún estudiante con "<strong>${escapeHtml(term)}</strong>"</p>
+                    </div>
+                `;
+                globalCount.textContent = '0 coincidencias';
+                btnLimpiar.classList.add('visible');
+                filtroActivo = true;
+                currentStudentIds = [];
+                btnPdf.disabled = true;
+                return;
+            }
+
+            const ids = estudiantesFiltrados.map(e => e.id);
+            view.innerHTML = generarContenidoSeccion(sectionId, ids);
+            globalCount.textContent = `${estudiantesFiltrados.length} estudiante${estudiantesFiltrados.length>1?'s':''} encontrado${estudiantesFiltrados.length>1?'s':''}`;
+            btnLimpiar.classList.add('visible');
+            filtroActivo = true;
+            currentStudentIds = ids;
+            btnPdf.disabled = false;
+        }
+
+        // ============================================================
+        // LIMPIAR FILTRO
+        // ============================================================
+        function limpiarFiltro() {
+            globalSearch.value = '';
+            filtroActivo = false;
+            currentStudentIds = [];
+            btnLimpiar.classList.remove('visible');
+            btnPdf.disabled = true;
+
+            const view = document.querySelector('.data-view.active');
+            if (!view) return;
+            const tab = document.querySelector('.tab.active');
+            if (!tab || !tab.dataset.section) return;
+            const sectionId = tab.dataset.section;
+            const sec = sections[sectionId];
+            if (!sec) return;
+
+            view.innerHTML = generarContenidoSeccion(sectionId, null);
+            globalCount.textContent = '0 coincidencias';
+        }
+
+        // ============================================================
+        // DESCARGAR PDF DEL ESTUDIANTE FILTRADO
+        // ============================================================
+        function descargarPDFEstudiante() {
+            if (!filtroActivo || currentStudentIds.length === 0) {
+                alert('Primero busca un estudiante para generar el PDF.');
+                return;
+            }
+
+            const tab = document.querySelector('.tab.active');
+            if (!tab || !tab.dataset.section) return;
+            const sectionId = tab.dataset.section;
+            const sec = sections[sectionId];
+            if (!sec) return;
+
+            const estudiante = sec.estudiantes.find(e => e.id === currentStudentIds[0]);
+            if (!estudiante) {
+                alert('Estudiante no encontrado.');
+                return;
+            }
+
+            // Recolectar datos del estudiante
+            const nombreCompleto = (estudiante.nombre || '') + ' ' + (estudiante.apellidos || '');
+            const cedula = estudiante.cedula || 'Sin cédula';
+            const correo = estudiante.correo || 'Sin correo';
+
+            // Calificaciones
+            const califs = sec.calificaciones.filter(c => c.estudianteId === estudiante.id);
+            // Asistencia
+            const asis = sec.asistencia.filter(a => a.estudianteId === estudiante.id);
+            // Bitácora
+            const bits = sec.bitacora.filter(b => b.estudianteId === estudiante.id);
+
+            // Preparar jsPDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Título
+            doc.setFontSize(16);
+            doc.text(`Informe de ${nombreCompleto}`, pageWidth / 2, 20, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(`Cédula: ${cedula}  |  Correo: ${correo}  |  Sección: ${sec.nombre}`, pageWidth / 2, 28, { align: 'center' });
+            doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth / 2, 34, { align: 'center' });
+
+            let y = 40;
+
+            // Tabla de Calificaciones
+            if (califs.length > 0) {
+                const tableData = califs.map(c => {
+                    const trabajo = Object.values(sec.trabajos).flat().find(t => t.id === c.trabajoId);
+                    const nombreTrabajo = trabajo ? trabajo.nombre : `ID ${c.trabajoId}`;
+                    const maxPuntos = trabajo ? trabajo.puntosMax || 100 : 100;
+                    const pct = maxPuntos > 0 ? Math.round((c.nota / maxPuntos) * 100) : 0;
+                    return [nombreTrabajo, c.tipoTrabajo, c.nota, maxPuntos, pct + '%'];
+                });
+                doc.autoTable({
+                    startY: y,
+                    head: [['Trabajo', 'Tipo', 'Nota', 'Máx', '%']],
+                    body: tableData,
+                    theme: 'striped',
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [41, 128, 185] },
+                    margin: { left: 14, right: 14 }
+                });
+                y = doc.lastAutoTable.finalY + 6;
+            }
+
+            // Tabla de Asistencia
+            if (asis.length > 0) {
+                const tableData = asis.map(a => {
+                    const estadoLabels = { presente: '✅ Presente', ausente: '❌ Ausente', tardia: '⏰ Tardía', justificada: '📋 Justificada' };
+                    return [a.fecha || 'Sin fecha', estadoLabels[a.estado] || a.estado, a.lecciones || 0];
+                });
+                doc.autoTable({
+                    startY: y,
+                    head: [['Fecha', 'Estado', 'Lecciones']],
+                    body: tableData,
+                    theme: 'striped',
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [41, 128, 185] },
+                    margin: { left: 14, right: 14 }
+                });
+                y = doc.lastAutoTable.finalY + 6;
+            }
+
+            // Bitácora (si hay)
+            if (bits.length > 0) {
+                const tableData = bits.map(b => [
+                    b.fecha || 'Sin fecha',
+                    b.titulo || 'Sin título',
+                    (b.contenido || '').substring(0, 60) + (b.contenido && b.contenido.length > 60 ? '…' : '')
+                ]);
+                doc.autoTable({
+                    startY: y,
+                    head: [['Fecha', 'Título', 'Contenido']],
+                    body: tableData,
+                    theme: 'striped',
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [41, 128, 185] },
+                    margin: { left: 14, right: 14 }
+                });
+                y = doc.lastAutoTable.finalY + 6;
+            }
+
+            // Resumen de porcentajes si existen
+            if (sec.porcentajes) {
+                const pctData = Object.entries(sec.porcentajes).map(([tipo, conf]) => [tipo, conf.porcentaje || 0, conf.activo ? 'Activo' : 'Inactivo']);
+                doc.autoTable({
+                    startY: y,
+                    head: [['Tipo', 'Porcentaje', 'Estado']],
+                    body: pctData,
+                    theme: 'striped',
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [41, 128, 185] },
+                    margin: { left: 14, right: 14 }
+                });
+                y = doc.lastAutoTable.finalY + 6;
+            }
+
+            // Pie de página
+            doc.setFontSize(8);
+            doc.text('Documento generado automáticamente desde el Visor de Respaldo', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+            doc.save(`Informe_${nombreCompleto.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        // ============================================================
         // PESTAÑAS
         // ============================================================
         function activarPestana(tabId) {
-            // Desactivar todas
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.data-view').forEach(v => v.classList.remove('active'));
 
-            // Activar la seleccionada
             const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
             if (tab) tab.classList.add('active');
             const view = document.getElementById('view-' + tabId);
             if (view) view.classList.add('active');
             activeTab = tabId;
+
+            if (globalSearch.value.trim()) {
+                aplicarBusquedaGlobal();
+            } else {
+                limpiarFiltro();
+            }
         }
 
         function cerrarPestana(tabId) {
@@ -949,7 +1206,6 @@
             const view = document.getElementById('view-' + tabId);
             if (tab) tab.remove();
             if (view) view.remove();
-            // Si la pestaña activa era esta, activar otra
             if (activeTab === tabId) {
                 const firstTab = document.querySelector('.tab:not(.tab[data-tab-id="welcome"])');
                 if (firstTab) {
@@ -958,22 +1214,6 @@
                     activarPestana('welcome');
                 }
             }
-        }
-
-        // ============================================================
-        // BÚSQUEDA GLOBAL (filtra filas en todas las tablas visibles)
-        // ============================================================
-        function aplicarBusquedaGlobal() {
-            const term = globalSearch.value.trim().toLowerCase();
-            const tables = document.querySelectorAll('.data-view.active .table-container table tbody tr');
-            let totalVisible = 0;
-            for (const row of tables) {
-                const text = row.textContent.toLowerCase();
-                const match = term === '' || text.includes(term);
-                row.style.display = match ? '' : 'none';
-                if (match) totalVisible++;
-            }
-            globalCount.textContent = `${totalVisible} coincidencias`;
         }
 
         // ============================================================
@@ -987,7 +1227,7 @@
         }
 
         // ============================================================
-        // TEMA (CLARO/OSCURO)
+        // TEMA CLARO/OSCURO
         // ============================================================
         themeBtn.addEventListener('click', function() {
             document.body.classList.toggle('light');
@@ -1000,7 +1240,7 @@
             if (e.key === 'Enter') consultar(e);
         });
 
-        console.log('✅ consultar_vscode.html cargado');
+        console.log('✅ Visor con ocultar ID y PDF por estudiante');
     </script>
 </body>
 </html>

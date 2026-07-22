@@ -106,7 +106,12 @@ class App extends BaseApp {
     async addWork(type) { await this.workManager.addWork(type); }
     async editWork(type, id) { await this.workManager.editWork(type, id); }
     async deleteWork(type, id) { await this.workManager.deleteWork(type, id); }
-
+async asignarNotaMaxima(type, workId, studentId) {
+    await this.groupModeManager.asignarNotaMaxima(type, workId, studentId);
+}
+async asignarNotaProporcional(type, workId, studentId) {
+    await this.groupModeManager.asignarNotaProporcional(type, workId, studentId);
+}
     // ============================================================
     // DELEGACIÓN DE MÉTODOS - GroupModeManager
     // ============================================================

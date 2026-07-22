@@ -314,7 +314,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
                     <i class="fas fa-calculator"></i>
                     Notas Finales - Edición Directa
                     <span class="count">(${estudiantesCount} estudiantes · ${totalColumnas} columnas)</span>
-                </h2>
+                </h2>Cotidiano
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn-action btn-info" onclick="window.app?.toggleAllGroups()">
                         <i class="fas fa-${todasExpandidas ? 'compress-arrows-alt' : 'expand-arrows-alt'}"></i>

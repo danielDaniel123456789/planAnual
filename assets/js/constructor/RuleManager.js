@@ -91,7 +91,7 @@ class RuleManager {
                 <div style="background:var(--bg-card); border-radius:8px; border:2px solid #cba6f7; padding:12px;">
                     <h3 style="margin:0 0 8px 0; color:#cba6f7;">Grupo ${grupo.numero}</h3>
                     <div style="font-size:13px;">
-                        <strong>👑 Líder:</strong> <span style="color:#f9e2af; font-weight:bold;">${escapeHtml(liderNombre)}</span>
+                        <strong>👑 Líder:</strong> <span style="color:text-primary;">${escapeHtml(liderNombre)}</span>
                     </div>
                     <div style="margin-top:8px; font-size:12px; color:var(--text-secondary);">
                         <strong>👥 Miembros (${grupo.miembros.length}):</strong><br>
@@ -235,18 +235,19 @@ class RuleManager {
 // ------------------------------------------------------------
 // Ruleta - selección aleatoria con efecto visual (3 segundos)
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// Ruleta - selección aleatoria con efecto visual (3 segundos)
+// ------------------------------------------------------------
 async ruleta() {
     const estudiantes = this.app.students.list || [];
     const total = estudiantes.length;
 
-    // Validación: necesitamos al menos 2 estudiantes para la ruleta
     if (total === 0) {
         this.app.ui.showError('No hay estudiantes registrados.');
         return;
     }
 
     if (total === 1) {
-        // Si solo hay uno, lo mostramos directamente sin animación
         const unicoNombre = this.app.students.getFullName(estudiantes[0]);
         await Swal.fire({
             title: '🎰 Ruleta',
@@ -254,7 +255,7 @@ async ruleta() {
                 <div style="font-size:48px; font-weight:bold; color:#a6e3a1; padding:20px; background:var(--bg-hover); border-radius:12px; margin:12px 0;">
                     🎉 ${escapeHtml(unicoNombre)} 🎉
                 </div>
-                <p style="color:var(--text-muted); font-size:13px;">Solo hay un estudiante registrado.</p>
+                <p style="color:var(--text-muted); font-size:13px;">Solo hay un estudiante registrado. Agrega más para que la ruleta tenga variedad.</p>
             `,
             confirmButtonText: 'Cerrar',
             background: 'var(--bg-card)',
@@ -269,7 +270,7 @@ async ruleta() {
     let detenido = false;
     let timeoutId = null;
 
-    // Elegir ganador con crypto (para mayor aleatoriedad)
+    // Elegir ganador (aleatorio)
     const ganadorIndex = Math.floor(Math.random() * total);
     const ganadorNombre = nombres[ganadorIndex];
 

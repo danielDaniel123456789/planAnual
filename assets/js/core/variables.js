@@ -45,7 +45,7 @@ const CATEGORIAS_MENU = [
     { id: 'bitacora', nombre: 'Bitácora', icono: 'fas fa-book', color: '#f38ba8' },
     { id: 'notas_finales', nombre: 'Notas Finales', icono: 'fas fa-chart-line', color: '#f9e2af' },
     { id: 'rubro', nombre: 'Rubros', icono: 'fas fa-percent', color: '#f9e2af' },
-        { id: 'rule', nombre: 'Reglas', icono: 'fas fa-dice', color: '#cba6f7' } 
+        { id: 'rule', nombre: 'Ruleta', icono: 'fas fa-dice', color: '#cba6f7' } 
 ];
 
         const PORCENTAJES_DEFAULT = {

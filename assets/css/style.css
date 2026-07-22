@@ -330,7 +330,7 @@ body {
 .btn-action.btn-success:hover { background: rgba(61, 165, 93, 0.25); }
 .btn-action.btn-danger { background: rgba(192, 57, 43, 0.15); color: #c0392b; }
 .btn-action.btn-danger:hover { background: rgba(192, 57, 43, 0.25); }
-.btn-action.btn-info { background: rgba(26, 188, 156, 0.15); color: #1abc9c; }
+.btn-action.btn-info { background: rgba(26, 188, 156, 0.15); color: #3da55d; }
 .btn-action.btn-info:hover { background: rgba(26, 188, 156, 0.25); }
 
 .works-list { display: grid; gap: 8px; }

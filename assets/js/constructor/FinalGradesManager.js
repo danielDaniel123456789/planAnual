@@ -311,7 +311,7 @@ async _calcularAsistenciaConParametros(studentId, todos, maxAusencias, tardiasPo
         return `
             <div class="works-header">
                 <h2>
-                    <i class="fas fa-calculator" style="color:#f9e2af;"></i>
+                    <i class="fas fa-calculator"></i>
                     Notas Finales - Edición Directa
                     <span class="count">(${estudiantesCount} estudiantes · ${totalColumnas} columnas)</span>
                 </h2>

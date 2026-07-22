@@ -194,7 +194,7 @@ async editRubro(id) {
             <div style="margin-top:12px; padding:12px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border-color);">
                 <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-muted);">
                     <span><i class="fas fa-info-circle" style="color:${this.tipoColor};"></i> Los rubros definen los porcentajes de evaluación</span>
-                    <span><i class="fas fa-calculator" style="color:${this.tipoColor};"></i> El total debe sumar <strong>100%</strong></span>
+                    <span><i class="fas fa-calculator" ></i> El total debe sumar <strong>100%</strong></span>
                     <span><i class="fas fa-mouse-pointer" style="color:${this.tipoColor};"></i> <strong>Haz clic</strong> en cualquier nombre o porcentaje para editarlo</span>
                 </div>
             </div>`;

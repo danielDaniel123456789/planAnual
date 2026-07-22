@@ -240,82 +240,101 @@ class BaseApp {
     // RENDER DE CONTENIDO
     // ============================================================
     async renderContent() {
-        const container = document.getElementById('mainContent');
-        if (!this.currentSectionId) {
-            container.innerHTML = this.getEmptySectionHTML();
-            return;
-        }
-
-        if (this.currentCategory === 'asistencia') {
-            if (this.asistenciaManager && typeof this.asistenciaManager.renderAsistencia === 'function') {
-                await this.asistenciaManager.renderAsistencia(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Asistencia no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (this.currentCategory === 'bitacora') {
-            if (this.bitacoraManager && typeof this.bitacoraManager.renderBitacora === 'function') {
-                await this.bitacoraManager.renderBitacora(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Bitácora no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (!this.currentCategory) {
-            container.innerHTML = this.getDefaultViewHTML();
-            return;
-        }
-
-        if (this.currentCategory === 'estudiantes') {
-            if (this.studentManager && typeof this.studentManager.renderStudents === 'function') {
-                await this.studentManager.renderStudents(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Estudiantes no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (this.currentCategory === 'notas_finales') {
-            if (this.finalGradesManager && typeof this.finalGradesManager.renderFinalGrades === 'function') {
-                await this.finalGradesManager.renderFinalGrades(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Notas Finales no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (this.currentCategory === 'plan') {
-            if (this.planManager && typeof this.planManager.renderPlan === 'function') {
-                await this.planManager.renderPlan(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Plan no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (this.currentCategory === 'machote') {
-            if (this.machoteManager && typeof this.machoteManager.renderMachotes === 'function') {
-                await this.machoteManager.renderMachotes(container);
-            } else {
-                container.innerHTML = `<div class="empty-state"><p>Módulo de Machotes no disponible</p></div>`;
-            }
-            return;
-        }
-
-        if (this.currentCategory === 'rubro') {
-            if (typeof this.renderRubros === 'function') {
-                await this.renderRubros(container);
-            } else {
-                await this.renderRubrosFallback(container);
-            }
-            return;
-        }
-
-        await this.workItemsView.render(container, this.currentCategory);
+    const container = document.getElementById('mainContent');
+    if (!this.currentSectionId) {
+        container.innerHTML = this.getEmptySectionHTML();
+        return;
     }
+
+    // --- Categoría: Asistencia ---
+    if (this.currentCategory === 'asistencia') {
+        if (this.asistenciaManager && typeof this.asistenciaManager.renderAsistencia === 'function') {
+            await this.asistenciaManager.renderAsistencia(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Asistencia no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Categoría: Bitácora ---
+    if (this.currentCategory === 'bitacora') {
+        if (this.bitacoraManager && typeof this.bitacoraManager.renderBitacora === 'function') {
+            await this.bitacoraManager.renderBitacora(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Bitácora no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- NUEVA CATEGORÍA: REGLAS (rule) ---
+    if (this.currentCategory === 'rule') {
+        if (this.ruleManager && typeof this.ruleManager.renderRule === 'function') {
+            await this.ruleManager.renderRule(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Reglas no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Vista por defecto si no hay categoría seleccionada ---
+    if (!this.currentCategory) {
+        container.innerHTML = this.getDefaultViewHTML();
+        return;
+    }
+
+    // --- Categoría: Estudiantes ---
+    if (this.currentCategory === 'estudiantes') {
+        if (this.studentManager && typeof this.studentManager.renderStudents === 'function') {
+            await this.studentManager.renderStudents(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Estudiantes no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Categoría: Notas Finales ---
+    if (this.currentCategory === 'notas_finales') {
+        if (this.finalGradesManager && typeof this.finalGradesManager.renderFinalGrades === 'function') {
+            await this.finalGradesManager.renderFinalGrades(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Notas Finales no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Categoría: Plan ---
+    if (this.currentCategory === 'plan') {
+        if (this.planManager && typeof this.planManager.renderPlan === 'function') {
+            await this.planManager.renderPlan(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Plan no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Categoría: Machote ---
+    if (this.currentCategory === 'machote') {
+        if (this.machoteManager && typeof this.machoteManager.renderMachotes === 'function') {
+            await this.machoteManager.renderMachotes(container);
+        } else {
+            container.innerHTML = `<div class="empty-state"><p>Módulo de Machotes no disponible</p></div>`;
+        }
+        return;
+    }
+
+    // --- Categoría: Rubro ---
+    if (this.currentCategory === 'rubro') {
+        if (this.rubrosManager && typeof this.rubrosManager.renderRubros === 'function') {
+            await this.rubrosManager.renderRubros(container);
+        } else {
+            await this.renderRubrosFallback(container);
+        }
+        return;
+    }
+
+    // Si no coincide con ninguna categoría especial, usar WorkItems (para cotidiano, tarea, examen, proyecto, etc.)
+    await this.workItemsView.render(container, this.currentCategory);
+}
 
     // ============================================================
     // MENÚ DE SECCIÓN

@@ -14,7 +14,8 @@ class App extends BaseApp {
         this.machoteManager = new MachoteManager(this);
         this.bitacoraManager = new BitacoraManager(this);
         this.rubrosManager = new RubrosManager(this);
-        this.alertManager = new AlertManager(); // 👈 NUEVO
+        this.alertManager = new AlertManager();
+        this.ruleManager = new RuleManager(this);
     }
 
     // ============================================================
@@ -69,6 +70,12 @@ class App extends BaseApp {
     async addBitacora() { await this.bitacoraManager.addBitacora(); }
     async editBitacora(id) { await this.bitacoraManager.editBitacora(id); }
     async deleteBitacora(id) { await this.bitacoraManager.deleteBitacora(id); }
+
+    // ============================================================
+// DELEGACIÓN DE MÉTODOS - RuleManager        <-- NUEVO BLOQUE
+// ============================================================
+async crearGrupos() { await this.ruleManager.crearGrupos(); }
+async ruleta() { await this.ruleManager.ruleta(); }
 
     // ============================================================
     // DELEGACIÓN DE MÉTODOS - StudentManager

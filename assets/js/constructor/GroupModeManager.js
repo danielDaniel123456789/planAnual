@@ -268,8 +268,13 @@ class GroupModeManager {
         return html;
     }
 
+    // ============================================================
+    // buildWorkStudentTableHTML - MODIFICADO PARA INCLUIR BOTONES OK Y CALC
+    // ============================================================
     buildWorkStudentTableHTML(type, id, work, estudiantesNoSeleccionados, terminoBusqueda, estadoGrupal, totalEstudiantes) {
         const isGrupalActivo = estadoGrupal.activo;
+        const puntosMax = work.puntosMax || 100; // El porcentaje máximo que vale este trabajo
+
         let html = `
             <div style="overflow-x:auto; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border-color);">
                 <div style="padding:8px 16px; background:var(--bg-hover); border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
@@ -292,6 +297,8 @@ class GroupModeManager {
                             <th>Cédula</th>
                             <th>Estudiante</th>
                             <th>Nota (%)</th>
+                            <th style="text-align:center; min-width:60px;">✅ OK</th>
+                            <th style="text-align:center; min-width:60px;">🧮 Calc</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyEstudiantes_${type}_${id}">`;
@@ -299,7 +306,7 @@ class GroupModeManager {
         if (estudiantesNoSeleccionados.length === 0 && totalEstudiantes > 0) {
             html += `
                 <tr>
-                    <td colspan="${isGrupalActivo ? '5' : '4'}" style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <td colspan="${isGrupalActivo ? '7' : '6'}" style="text-align:center; padding:40px; color:var(--text-muted);">
                         ${terminoBusqueda ? `
                             <i class="fas fa-search" style="font-size:32px; color:#f9e2af; display:block; margin-bottom:12px;"></i>
                             <p style="font-size:15px; color:var(--text-primary);">No se encontraron estudiantes con "${escapeHtml(terminoBusqueda)}"</p>
@@ -314,7 +321,7 @@ class GroupModeManager {
         } else if (estudiantesNoSeleccionados.length === 0) {
             html += `
                 <tr>
-                    <td colspan="${isGrupalActivo ? '5' : '4'}" style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <td colspan="${isGrupalActivo ? '7' : '6'}" style="text-align:center; padding:40px; color:var(--text-muted);">
                         <i class="fas fa-users" style="font-size:32px; color:var(--text-muted); display:block; margin-bottom:12px;"></i>
                         <p style="font-size:15px; color:var(--text-primary);">No hay estudiantes registrados</p>
                     </td>
@@ -343,7 +350,11 @@ class GroupModeManager {
                 } else {
                     nombreMostrar = escapeHtml(nombreCompleto);
                 }
-                
+
+                // Determinar si los botones deben estar deshabilitados (modo grupal activo)
+                const disabledAttr = isGrupalActivo ? 'disabled' : '';
+                const disabledClass = isGrupalActivo ? 'opacity:0.5; cursor:not-allowed;' : '';
+
                 html += `
                     <tr id="fila-trabajo-${student.id}">
                         ${isGrupalActivo ? `
@@ -375,6 +386,26 @@ class GroupModeManager {
                                 ${isGrupalActivo ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}
                             />
                             ${isGrupalActivo ? '<span style="display:block; font-size:8px; color:var(--text-muted);">(usa el input grupal)</span>' : ''}
+                        </td>
+                        <!-- Botón OK -->
+                        <td style="text-align:center;">
+                            <button class="btn-action btn-success" 
+                                onclick="window.app?.asignarNotaMaxima('${type}', ${id}, ${student.id})"
+                                style="padding:4px 8px; font-size:11px; border-radius:12px;"
+                                ${disabledAttr}
+                                title="Asignar nota máxima (${puntosMax}%)">
+                                <i class="fas fa-check"></i> OK
+                            </button>
+                        </td>
+                        <!-- Botón Calculadora -->
+                        <td style="text-align:center;">
+                            <button class="btn-action btn-info" 
+                                onclick="window.app?.asignarNotaProporcional('${type}', ${id}, ${student.id})"
+                                style="padding:4px 8px; font-size:11px; border-radius:12px;"
+                                ${disabledAttr}
+                                title="Calcular nota proporcional (factor)">
+                                <i class="fas fa-calculator"></i> Calc
+                            </button>
                         </td>
                     </tr>`;
             }
@@ -420,12 +451,169 @@ class GroupModeManager {
                 </div>
                 <div style="display:flex; gap:8px; font-size:11px; color:var(--text-muted);">
                     <i class="fas fa-info-circle"></i>
-                    <span>${estadoGrupal.activo ? '✅ Escribe la nota en el campo grupal para aplicarla a todos' : '🔘 Activa el "Modo Grupal" para evaluar en grupo'}</span>
+                    <span>${estadoGrupal.activo ? '✅ Escribe la nota en el campo grupal para aplicarla a todos' : '🔘 Usa OK para nota máxima o Calc para nota proporcional'}</span>
                 </div>
             </div>`;
     }
 
-    // Métodos de control de grupo
+    // ============================================================
+    // NUEVOS MÉTODOS: Asignar nota máxima y proporcional
+    // ============================================================
+
+    // Asignar la nota máxima (puntosMax) al estudiante
+    async asignarNotaMaxima(type, workId, studentId) {
+        const work = this.app.grades.getWorkById(type, workId);
+        if (!work) {
+            this.app.ui.showError('Trabajo no encontrado');
+            return;
+        }
+
+        // Si el modo grupal está activo, no permitir
+        const key = `${type}_${workId}`;
+        if (this.app._seleccionGrupal && this.app._seleccionGrupal[key] && this.app._seleccionGrupal[key].activo) {
+            this.app.ui.showError('El modo grupal está activo. Desactívalo para asignar notas individuales.');
+            return;
+        }
+
+        const puntosMax = work.puntosMax || 100;
+        const nota = Math.round(puntosMax * 10) / 10; // redondear a 1 decimal
+
+        try {
+            await this.app.grades.saveGrade(
+                this.app.currentSectionId,
+                studentId,
+                workId,
+                type,
+                nota
+            );
+
+            // Actualizar el input en la tabla
+            const input = document.querySelector(`#fila-trabajo-${studentId} .input-nota`);
+            if (input) {
+                input.value = nota;
+                input.className = `input-nota ${nota >= 70 ? 'aprobado' : 'reprobado'}`;
+                const td = input.closest('.nota-cell');
+                if (td) {
+                    td.className = `nota-cell ${nota >= 70 ? 'aprobado' : 'reprobado'}`;
+                }
+            }
+
+            const nombreEstudiante = this.app.students.getFullName(
+                this.app.students.getById(studentId)
+            );
+            this.app.ui.showToast(`${nombreEstudiante} → Nota máxima: ${nota}%`, 'success', 1500);
+            this.app.updateStats();
+
+        } catch (error) {
+            console.error('Error asignando nota máxima:', error);
+            this.app.ui.showError('Error al guardar la nota');
+        }
+    }
+
+    // Asignar nota proporcional: factor * puntosMax
+    async asignarNotaProporcional(type, workId, studentId) {
+        const work = this.app.grades.getWorkById(type, workId);
+        if (!work) {
+            this.app.ui.showError('Trabajo no encontrado');
+            return;
+        }
+
+        // Si el modo grupal está activo, no permitir
+        const key = `${type}_${workId}`;
+        if (this.app._seleccionGrupal && this.app._seleccionGrupal[key] && this.app._seleccionGrupal[key].activo) {
+            this.app.ui.showError('El modo grupal está activo. Desactívalo para asignar notas individuales.');
+            return;
+        }
+
+        const puntosMax = work.puntosMax || 100;
+
+        // Pedir factor al usuario
+        const result = await Swal.fire({
+            title: 'Calcular nota proporcional',
+            html: `
+                <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                    <label style="font-size:13px; color:var(--text-secondary);">
+                        Ingresa el factor (ej. 0.5 para 50%):
+                    </label>
+                    <input id="swal-factor" class="swal2-input" type="number" step="0.01" min="0" max="1" value="0.5">
+                    <div style="font-size:12px; color:var(--text-muted);">
+                        Nota resultante = ${puntosMax}% × factor
+                    </div>
+                    <div style="font-size:14px; font-weight:bold; color:var(--text-primary);">
+                        Resultado: <span id="preview-resultado">${(puntosMax * 0.5).toFixed(1)}%</span>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Aplicar',
+            cancelButtonText: 'Cancelar',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            width: '400px',
+            didOpen: () => {
+                const factorInput = document.getElementById('swal-factor');
+                const preview = document.getElementById('preview-resultado');
+
+                const actualizarPreview = () => {
+                    const factor = parseFloat(factorInput.value) || 0;
+                    const nota = Math.round((puntosMax * factor) * 10) / 10;
+                    preview.textContent = `${nota}%`;
+                };
+
+                factorInput.addEventListener('input', actualizarPreview);
+                actualizarPreview();
+            },
+            preConfirm: () => {
+                const factor = parseFloat(document.getElementById('swal-factor').value);
+                if (isNaN(factor) || factor < 0 || factor > 1) {
+                    Swal.showValidationMessage('El factor debe ser un número entre 0 y 1');
+                    return;
+                }
+                return factor;
+            }
+        });
+
+        if (!result.isConfirmed || result.value === undefined) return;
+
+        const factor = result.value;
+        const nota = Math.round((puntosMax * factor) * 10) / 10;
+
+        try {
+            await this.app.grades.saveGrade(
+                this.app.currentSectionId,
+                studentId,
+                workId,
+                type,
+                nota
+            );
+
+            // Actualizar input
+            const input = document.querySelector(`#fila-trabajo-${studentId} .input-nota`);
+            if (input) {
+                input.value = nota;
+                input.className = `input-nota ${nota >= 70 ? 'aprobado' : 'reprobado'}`;
+                const td = input.closest('.nota-cell');
+                if (td) {
+                    td.className = `nota-cell ${nota >= 70 ? 'aprobado' : 'reprobado'}`;
+                }
+            }
+
+            const nombreEstudiante = this.app.students.getFullName(
+                this.app.students.getById(studentId)
+            );
+            this.app.ui.showToast(`${nombreEstudiante} → Nota calculada: ${nota}%`, 'success', 1500);
+            this.app.updateStats();
+
+        } catch (error) {
+            console.error('Error asignando nota proporcional:', error);
+            this.app.ui.showError('Error al guardar la nota');
+        }
+    }
+
+    // ============================================================
+    // MÉTODOS EXISTENTES (sin cambios)
+    // ============================================================
+
     filtrarEstudiantesGrupales(type, workId, termino) {
         const key = `${type}_${workId}`;
         if (!this.app._seleccionGrupal) {

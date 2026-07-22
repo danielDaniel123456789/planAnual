@@ -72,13 +72,17 @@ if (typeof Attendance === 'undefined') {
 
 class BaseApp {
     constructor() {
-        this.db = db;
-        this.config = config;
-        this.ui = ui;
-        this.sections = sections;
-        this.students = students;
-        this.grades = grades;
-        this.plan = plan;
+        // --- Estas propiedades se inicializarán en init() ---
+        this.db = null;           // se asignará desde la variable global 'db'
+        this.config = null;       // se asignará desde 'config'
+        this.ui = null;           // se asignará desde 'ui'
+        this.sections = null;
+        this.students = null;
+        this.grades = null;
+        this.plan = null;
+        this._attendance = null;
+
+        // --- Estado de la aplicación ---
         this.currentSectionId = null;
         this.currentCategory = null;
         this.currentWork = null;
@@ -87,33 +91,31 @@ class BaseApp {
         this._gruposExpandidos = {};
         this._categoriaSeleccionada = null;
         this._seleccionGrupal = {};
-        this.sidebarView = new Sidebar(this);
-        this.workItemsView = new WorkItems(this);
 
-        // *** Instancia de Attendance (se creará bajo demanda) ***
-        this._attendance = null;
+        // --- Vistas (dependen de 'this', se crean en init()) ---
+        this.sidebarView = null;
+        this.workItemsView = null;
 
-        // Managers (se inicializan en la clase hija)
+        // --- Managers (se inicializan en init()) ---
         this.studentManager = null;
         this.planManager = null;
         this.finalGradesManager = null;
         this.machoteManager = null;
         this.bitacoraManager = null;
         this.rubrosManager = null;
-        // AsistenciaManager necesita this.app.attendance
-        this.asistenciaManager = new AsistenciaManager(this);
+        this.asistenciaManager = null;
+        this.ruleManager = null;
     }
 
-    // *** GETTER LAZY con protección ***
+    // *** GETTER LAZY para Attendance (se crea bajo demanda) ***
     get attendance() {
         if (!this._attendance) {
-            // Attendance ya debería estar definida (por la dummy o por el script real)
             try {
                 this._attendance = new Attendance(this.db);
                 console.log('✅ Attendance instanciado correctamente');
             } catch (e) {
                 console.error('❌ Error al instanciar Attendance:', e);
-                // Fallback extremo: crear un objeto con métodos vacíos
+                // Fallback extremo
                 this._attendance = {
                     load: async () => {},
                     saveDetailed: async () => {},
@@ -137,20 +139,53 @@ class BaseApp {
         return this._attendance;
     }
 
+    // ============================================================
+    // INICIALIZACIÓN PRINCIPAL
+    // ============================================================
     async init() {
-        console.log(' Iniciando App...');
+        console.log('🚀 Iniciando BaseApp...');
+
+        // 1. Asignar las dependencias globales (ya están cargadas)
+        this.db = db;
+        this.config = config;
+        this.ui = ui;
+
+        // 2. Inicializar la base de datos (primero)
         await this.db.init();
+
+        // 3. Crear las instancias de los módulos principales (AHORA db está lista)
+        this.sections = new Sections(this.db);
+        this.students = new Students(this.db);
+        this.grades = new Grades(this.db);   // ← NUEVA instancia, NO global
+        this.plan = new Plan(this.db);
+
+        // 4. Inicializar vistas (dependen de 'this')
+        this.sidebarView = new Sidebar(this);
+        this.workItemsView = new WorkItems(this);
+
+        // 5. Inicializar managers (dependen de 'this')
+        this.studentManager = new StudentManager(this);
+        this.planManager = new PlanManager(this);
+        this.finalGradesManager = new FinalGradesManager(this);
+        this.machoteManager = new MachoteManager(this);
+        this.bitacoraManager = new BitacoraManager(this);
+        this.rubrosManager = new RubrosManager(this);
+        this.ruleManager = new RuleManager(this);
+        this.asistenciaManager = new AsistenciaManager(this); // ← Ahora 'this' tiene grades
+
+        // 6. Cargar configuración y aplicar tema
         this.config.load();
         this.applyTheme();
-        // Forzar la creación de attendance (para asegurar que esté disponible)
-        try {
-            this.attendance; // llama al getter
-        } catch(e) {
-            console.warn('⚠️ Attendance no disponible al iniciar:', e);
-        }
+
+        // 7. Cargar datos (secciones, estudiantes, trabajos, etc.)
         await this.loadData();
+
+        // 8. Configurar eventos
         this.setupEvents();
+
+        // 9. Renderizar
         await this.render();
+
         console.log('✅ App lista!');
     }
 
@@ -159,6 +194,9 @@ class BaseApp {
         document.body.setAttribute('data-theme', tema === 'teams' ? 'light' : 'dark');
     }
 
+    // ============================================================
+    // CARGA DE DATOS
+    // ============================================================
     async loadData() {
         await this.sections.load();
         if (this.sections.currentId) {
@@ -172,10 +210,12 @@ class BaseApp {
         await this.students.load(sectionId);
         await this.grades.loadWorks(sectionId);
         await this.plan.load(sectionId);
-        // Usamos el getter attendance (ya sea real o dummy)
         await this.attendance.load(sectionId);
     }
 
+    // ============================================================
+    // EVENTOS
+    // ============================================================
     setupEvents() {
         document.getElementById('themeToggle')?.addEventListener('click', () => { this.toggleTheme(); });
         document.getElementById('addSectionBtn')?.addEventListener('click', () => { this.createNewSection(); });
@@ -240,101 +280,101 @@ class BaseApp {
     // RENDER DE CONTENIDO
     // ============================================================
     async renderContent() {
-    const container = document.getElementById('mainContent');
-    if (!this.currentSectionId) {
-        container.innerHTML = this.getEmptySectionHTML();
-        return;
-    }
-
-    // --- Categoría: Asistencia ---
-    if (this.currentCategory === 'asistencia') {
-        if (this.asistenciaManager && typeof this.asistenciaManager.renderAsistencia === 'function') {
-            await this.asistenciaManager.renderAsistencia(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Asistencia no disponible</p></div>`;
+        const container = document.getElementById('mainContent');
+        if (!this.currentSectionId) {
+            container.innerHTML = this.getEmptySectionHTML();
+            return;
         }
-        return;
-    }
 
-    // --- Categoría: Bitácora ---
-    if (this.currentCategory === 'bitacora') {
-        if (this.bitacoraManager && typeof this.bitacoraManager.renderBitacora === 'function') {
-            await this.bitacoraManager.renderBitacora(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Bitácora no disponible</p></div>`;
+        // --- Categoría: Asistencia ---
+        if (this.currentCategory === 'asistencia') {
+            if (this.asistenciaManager && typeof this.asistenciaManager.renderAsistencia === 'function') {
+                await this.asistenciaManager.renderAsistencia(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Asistencia no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // --- NUEVA CATEGORÍA: REGLAS (rule) ---
-    if (this.currentCategory === 'rule') {
-        if (this.ruleManager && typeof this.ruleManager.renderRule === 'function') {
-            await this.ruleManager.renderRule(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Reglas no disponible</p></div>`;
+        // --- Categoría: Bitácora ---
+        if (this.currentCategory === 'bitacora') {
+            if (this.bitacoraManager && typeof this.bitacoraManager.renderBitacora === 'function') {
+                await this.bitacoraManager.renderBitacora(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Bitácora no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // --- Vista por defecto si no hay categoría seleccionada ---
-    if (!this.currentCategory) {
-        container.innerHTML = this.getDefaultViewHTML();
-        return;
-    }
-
-    // --- Categoría: Estudiantes ---
-    if (this.currentCategory === 'estudiantes') {
-        if (this.studentManager && typeof this.studentManager.renderStudents === 'function') {
-            await this.studentManager.renderStudents(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Estudiantes no disponible</p></div>`;
+        // --- NUEVA CATEGORÍA: REGLAS (rule) ---
+        if (this.currentCategory === 'rule') {
+            if (this.ruleManager && typeof this.ruleManager.renderRule === 'function') {
+                await this.ruleManager.renderRule(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Reglas no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // --- Categoría: Notas Finales ---
-    if (this.currentCategory === 'notas_finales') {
-        if (this.finalGradesManager && typeof this.finalGradesManager.renderFinalGrades === 'function') {
-            await this.finalGradesManager.renderFinalGrades(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Notas Finales no disponible</p></div>`;
+        // --- Vista por defecto si no hay categoría seleccionada ---
+        if (!this.currentCategory) {
+            container.innerHTML = this.getDefaultViewHTML();
+            return;
         }
-        return;
-    }
 
-    // --- Categoría: Plan ---
-    if (this.currentCategory === 'plan') {
-        if (this.planManager && typeof this.planManager.renderPlan === 'function') {
-            await this.planManager.renderPlan(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Plan no disponible</p></div>`;
+        // --- Categoría: Estudiantes ---
+        if (this.currentCategory === 'estudiantes') {
+            if (this.studentManager && typeof this.studentManager.renderStudents === 'function') {
+                await this.studentManager.renderStudents(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Estudiantes no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // --- Categoría: Machote ---
-    if (this.currentCategory === 'machote') {
-        if (this.machoteManager && typeof this.machoteManager.renderMachotes === 'function') {
-            await this.machoteManager.renderMachotes(container);
-        } else {
-            container.innerHTML = `<div class="empty-state"><p>Módulo de Machotes no disponible</p></div>`;
+        // --- Categoría: Notas Finales ---
+        if (this.currentCategory === 'notas_finales') {
+            if (this.finalGradesManager && typeof this.finalGradesManager.renderFinalGrades === 'function') {
+                await this.finalGradesManager.renderFinalGrades(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Notas Finales no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // --- Categoría: Rubro ---
-    if (this.currentCategory === 'rubro') {
-        if (this.rubrosManager && typeof this.rubrosManager.renderRubros === 'function') {
-            await this.rubrosManager.renderRubros(container);
-        } else {
-            await this.renderRubrosFallback(container);
+        // --- Categoría: Plan ---
+        if (this.currentCategory === 'plan') {
+            if (this.planManager && typeof this.planManager.renderPlan === 'function') {
+                await this.planManager.renderPlan(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Plan no disponible</p></div>`;
+            }
+            return;
         }
-        return;
-    }
 
-    // Si no coincide con ninguna categoría especial, usar WorkItems (para cotidiano, tarea, examen, proyecto, etc.)
-    await this.workItemsView.render(container, this.currentCategory);
-}
+        // --- Categoría: Machote ---
+        if (this.currentCategory === 'machote') {
+            if (this.machoteManager && typeof this.machoteManager.renderMachotes === 'function') {
+                await this.machoteManager.renderMachotes(container);
+            } else {
+                container.innerHTML = `<div class="empty-state"><p>Módulo de Machotes no disponible</p></div>`;
+            }
+            return;
+        }
+
+        // --- Categoría: Rubro ---
+        if (this.currentCategory === 'rubro') {
+            if (this.rubrosManager && typeof this.rubrosManager.renderRubros === 'function') {
+                await this.rubrosManager.renderRubros(container);
+            } else {
+                await this.renderRubrosFallback(container);
+            }
+            return;
+        }
+
+        // Si no coincide con ninguna categoría especial, usar WorkItems (para cotidiano, tarea, examen, proyecto, etc.)
+        await this.workItemsView.render(container, this.currentCategory);
+    }
 
     // ============================================================
     // MENÚ DE SECCIÓN
